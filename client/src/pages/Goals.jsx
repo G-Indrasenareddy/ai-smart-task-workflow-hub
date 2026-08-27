@@ -27,19 +27,20 @@ export default function Goals() {
     return { total, active, completed, atRisk };
   }, [goals]);
 
-  // Filter & Sort Goals Dynamically
+  // Filter & Sort Goals Dynamically with safe string dereferencing
   const filteredGoals = useMemo(() => {
     return goals
       .filter((goal) => {
-        const matchesSearch = goal.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          goal.description.toLowerCase().includes(searchTerm.toLowerCase());
+        const titleMatch = goal.title && goal.title.toLowerCase().includes(searchTerm.toLowerCase());
+        const descMatch = goal.description && goal.description.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesSearch = titleMatch || descMatch;
         const matchesStatus = statusFilter === 'All' || goal.status === statusFilter;
         return matchesSearch && matchesStatus;
       })
       .sort((a, b) => {
-        if (sortBy === 'title') return a.title.localeCompare(b.title);
-        if (sortBy === 'targetDate') return a.targetDate.localeCompare(b.targetDate);
-        return b.progress - a.progress;
+        if (sortBy === 'title') return (a.title || '').localeCompare(b.title || '');
+        if (sortBy === 'targetDate') return (a.targetDate || '').localeCompare(b.targetDate || '');
+        return (b.progress || 0) - (a.progress || 0);
       });
   }, [goals, searchTerm, statusFilter, sortBy]);
 

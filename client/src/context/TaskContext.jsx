@@ -73,9 +73,9 @@ export function TaskProvider({ children }) {
   const [tasks, setTasks] = useState(() => {
     try {
       const saved = localStorage.getItem('flowmind_tasks');
-      if (saved) {
+      if (saved !== null) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
+        if (Array.isArray(parsed)) {
           return parsed;
         }
       }
@@ -97,7 +97,11 @@ export function TaskProvider({ children }) {
   const createTask = (newTaskData) => {
     const newTask = {
       id: Date.now() + Math.floor(Math.random() * 1000),
-      ...newTaskData,
+      title: newTaskData.title || 'New Task',
+      description: newTaskData.description || '',
+      status: newTaskData.status || 'To Do',
+      priority: newTaskData.priority || 'Medium',
+      dueDate: newTaskData.dueDate || 'Today',
     };
     setTasks((prev) => [newTask, ...prev]);
     return newTask;

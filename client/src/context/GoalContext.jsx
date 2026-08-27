@@ -63,9 +63,9 @@ export function GoalProvider({ children }) {
   const [goals, setGoals] = useState(() => {
     try {
       const saved = localStorage.getItem('flowmind_goals');
-      if (saved) {
+      if (saved !== null) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
+        if (Array.isArray(parsed)) {
           return parsed;
         }
       }
@@ -87,7 +87,12 @@ export function GoalProvider({ children }) {
   const createGoal = (newGoalData) => {
     const newGoal = {
       id: Date.now() + Math.floor(Math.random() * 1000),
-      ...newGoalData,
+      title: newGoalData.title || 'New Goal',
+      description: newGoalData.description || '',
+      progress: Number(newGoalData.progress) || 0,
+      status: newGoalData.status || 'Active',
+      targetDate: newGoalData.targetDate || 'September 30, 2026',
+      tasksCount: Number(newGoalData.tasksCount) || 0,
     };
     setGoals((prev) => [newGoal, ...prev]);
     return newGoal;
