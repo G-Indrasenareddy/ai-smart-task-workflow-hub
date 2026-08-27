@@ -1,8 +1,10 @@
 import { useState, useMemo } from 'react';
 import { Plus, Search, Filter, ArrowUpDown, CheckCircle2, Clock, Circle, ListFilter } from 'lucide-react';
 import TaskRow from '../components/TaskRow';
+import CreateTaskModal from '../components/CreateTaskModal';
+import SuccessToast from '../components/SuccessToast';
 
-const mockTasksData = [
+const initialTasksData = [
   {
     id: 1,
     title: 'Finalize Dashboard UI',
@@ -62,23 +64,26 @@ const mockTasksData = [
 ];
 
 export default function Tasks() {
+  const [tasks, setTasks] = useState(initialTasksData);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [priorityFilter, setPriorityFilter] = useState('All');
   const [sortBy, setSortBy] = useState('dueDate');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
 
-  // Compute Task Summaries
+  // Compute Task Summaries Dynamically from tasks State
   const summaries = useMemo(() => {
-    const total = mockTasksData.length;
-    const todo = mockTasksData.filter((t) => t.status === 'To Do').length;
-    const inProgress = mockTasksData.filter((t) => t.status === 'In Progress').length;
-    const completed = mockTasksData.filter((t) => t.status === 'Completed').length;
+    const total = tasks.length;
+    const todo = tasks.filter((t) => t.status === 'To Do').length;
+    const inProgress = tasks.filter((t) => t.status === 'In Progress').length;
+    const completed = tasks.filter((t) => t.status === 'Completed').length;
     return { total, todo, inProgress, completed };
-  }, []);
+  }, [tasks]);
 
-  // Filter & Sort Tasks
+  // Filter & Sort Tasks Dynamically
   const filteredTasks = useMemo(() => {
-    return mockTasksData
+    return tasks
       .filter((task) => {
         const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesStatus = statusFilter === 'All' || task.status === statusFilter;
@@ -93,10 +98,32 @@ export default function Tasks() {
         }
         return a.dueDate.localeCompare(b.dueDate);
       });
-  }, [searchTerm, statusFilter, priorityFilter, sortBy]);
+  }, [tasks, searchTerm, statusFilter, priorityFilter, sortBy]);
+
+  // Handle New Task Creation
+  const handleCreateTask = (newTaskData) => {
+    const newTask = {
+      id: Date.now(),
+      ...newTaskData,
+    };
+    setTasks((prev) => [newTask, ...prev]);
+    setToastMessage('Task created successfully!');
+  };
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
+      {/* Toast Notification */}
+      {toastMessage && (
+        <SuccessToast message={toastMessage} onClose={() => setToastMessage('')} />
+      )}
+
+      {/* Create Task Modal */}
+      <CreateTaskModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onCreateTask={handleCreateTask}
+      />
+
       {/* 1. Tasks Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900/60 border border-slate-800 p-6 rounded-xl">
         <div>
@@ -108,6 +135,7 @@ export default function Tasks() {
 
         <button
           type="button"
+          onClick={() => setIsModalOpen(true)}
           className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold rounded-lg shadow-md transition-all shrink-0"
         >
           <Plus className="w-4 h-4" />

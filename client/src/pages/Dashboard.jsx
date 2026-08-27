@@ -1,8 +1,11 @@
+import { useState } from 'react';
 import { Plus, ListTodo, CheckCircle2, Clock, AlertCircle, Calendar } from 'lucide-react';
 import StatCard from '../components/StatCard';
 import TaskItem from '../components/TaskItem';
 import GoalProgress from '../components/GoalProgress';
 import AIInsightCard from '../components/AIInsightCard';
+import CreateTaskModal from '../components/CreateTaskModal';
+import SuccessToast from '../components/SuccessToast';
 
 const statsData = [
   {
@@ -43,7 +46,7 @@ const statsData = [
   },
 ];
 
-const mockTasks = [
+const initialMockTasks = [
   {
     id: 1,
     title: 'Finalize Q3 Product Roadmap',
@@ -96,8 +99,36 @@ const mockGoals = [
 ];
 
 export default function Dashboard() {
+  const [tasks, setTasks] = useState(initialMockTasks);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+
+  const handleCreateTask = (newTaskData) => {
+    const newTask = {
+      id: Date.now(),
+      title: newTaskData.title,
+      priority: newTaskData.priority,
+      dueTime: newTaskData.dueDate || 'Today',
+      isCompleted: newTaskData.status === 'Completed',
+    };
+    setTasks((prev) => [newTask, ...prev]);
+    setToastMessage('Task created successfully!');
+  };
+
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
+      {/* Toast Notification */}
+      {toastMessage && (
+        <SuccessToast message={toastMessage} onClose={() => setToastMessage('')} />
+      )}
+
+      {/* Create Task Modal */}
+      <CreateTaskModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onCreateTask={handleCreateTask}
+      />
+
       {/* 1. Welcome Section */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900/60 border border-slate-800 p-6 rounded-xl">
         <div>
@@ -111,6 +142,7 @@ export default function Dashboard() {
 
         <button
           type="button"
+          onClick={() => setIsModalOpen(true)}
           className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold rounded-lg shadow-md hover:shadow-indigo-600/20 transition-all shrink-0"
         >
           <Plus className="w-4 h-4" />
@@ -137,12 +169,12 @@ export default function Dashboard() {
               </h2>
             </div>
             <span className="text-xs text-slate-400 font-medium bg-slate-800 px-2.5 py-1 rounded-full">
-              4 Tasks
+              {tasks.length} Tasks
             </span>
           </div>
 
           <div className="space-y-2.5">
-            {mockTasks.map((task) => (
+            {tasks.map((task) => (
               <TaskItem key={task.id} {...task} />
             ))}
           </div>

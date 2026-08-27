@@ -2,8 +2,10 @@ import { useState, useMemo } from 'react';
 import { Plus, Search, Filter, ArrowUpDown, Target, CheckCircle2, AlertTriangle, Clock } from 'lucide-react';
 import GoalStatsCard from '../components/GoalStatsCard';
 import GoalProgressCard from '../components/GoalProgressCard';
+import CreateGoalModal from '../components/CreateGoalModal';
+import SuccessToast from '../components/SuccessToast';
 
-const mockGoalsData = [
+const initialGoalsData = [
   {
     id: 1,
     title: 'Launch FlowMind AI Beta',
@@ -61,22 +63,25 @@ const mockGoalsData = [
 ];
 
 export default function Goals() {
+  const [goals, setGoals] = useState(initialGoalsData);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [sortBy, setSortBy] = useState('progress');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
 
-  // Compute Goal Summaries Dynamically
+  // Compute Goal Summaries Dynamically from goals State
   const summaries = useMemo(() => {
-    const total = mockGoalsData.length;
-    const active = mockGoalsData.filter((g) => g.status === 'Active').length;
-    const completed = mockGoalsData.filter((g) => g.status === 'Completed').length;
-    const atRisk = mockGoalsData.filter((g) => g.status === 'At Risk').length;
+    const total = goals.length;
+    const active = goals.filter((g) => g.status === 'Active').length;
+    const completed = goals.filter((g) => g.status === 'Completed').length;
+    const atRisk = goals.filter((g) => g.status === 'At Risk').length;
     return { total, active, completed, atRisk };
-  }, []);
+  }, [goals]);
 
-  // Filter & Sort Goals
+  // Filter & Sort Goals Dynamically
   const filteredGoals = useMemo(() => {
-    return mockGoalsData
+    return goals
       .filter((goal) => {
         const matchesSearch = goal.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
           goal.description.toLowerCase().includes(searchTerm.toLowerCase());
@@ -86,12 +91,34 @@ export default function Goals() {
       .sort((a, b) => {
         if (sortBy === 'title') return a.title.localeCompare(b.title);
         if (sortBy === 'targetDate') return a.targetDate.localeCompare(b.targetDate);
-        return b.progress - a.progress; // Highest progress first by default
+        return b.progress - a.progress;
       });
-  }, [searchTerm, statusFilter, sortBy]);
+  }, [goals, searchTerm, statusFilter, sortBy]);
+
+  // Handle New Goal Creation
+  const handleCreateGoal = (newGoalData) => {
+    const newGoal = {
+      id: Date.now(),
+      ...newGoalData,
+    };
+    setGoals((prev) => [newGoal, ...prev]);
+    setToastMessage('Goal created successfully!');
+  };
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
+      {/* Toast Notification */}
+      {toastMessage && (
+        <SuccessToast message={toastMessage} onClose={() => setToastMessage('')} />
+      )}
+
+      {/* Create Goal Modal */}
+      <CreateGoalModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onCreateGoal={handleCreateGoal}
+      />
+
       {/* 1. Header Section */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900/60 border border-slate-800 p-6 rounded-xl">
         <div>
@@ -103,6 +130,7 @@ export default function Goals() {
 
         <button
           type="button"
+          onClick={() => setIsModalOpen(true)}
           className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold rounded-lg shadow-md transition-all shrink-0"
         >
           <Plus className="w-4 h-4" />
