@@ -70,33 +70,26 @@ const initialTasksData = [
 const TaskContext = createContext();
 
 export function TaskProvider({ children }) {
-  console.log('[TaskProvider] Rendering TaskProvider component');
-
   const [tasks, setTasks] = useState(() => {
     try {
       const saved = localStorage.getItem('flowmind_tasks');
-      console.log('[TaskContext init] Checking localStorage key flowmind_tasks:', saved);
       if (saved !== null) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) {
-          console.log('[TaskContext init] Initialized state from localStorage. Total count:', parsed.length);
           return parsed;
         }
       }
     } catch (e) {
-      console.error('[TaskContext init] Error reading localStorage:', e);
+      console.error('Error loading flowmind_tasks from localStorage:', e);
     }
-    console.log('[TaskContext init] Initialized state from fallback initialTasksData. Total count:', initialTasksData.length);
     return initialTasksData;
   });
 
-  // Save to localStorage on state changes
   useEffect(() => {
     try {
-      console.log('[TaskContext useEffect] Saving tasks to localStorage. Count:', tasks.length);
       localStorage.setItem('flowmind_tasks', JSON.stringify(tasks));
     } catch (e) {
-      console.error('[TaskContext useEffect] Failed to save tasks to localStorage', e);
+      console.error('Error saving flowmind_tasks to localStorage:', e);
     }
   }, [tasks]);
 
@@ -109,18 +102,15 @@ export function TaskProvider({ children }) {
       priority: newTaskData.priority || 'Medium',
       dueDate: newTaskData.dueDate || 'Today',
     };
-    console.log('[TaskContext createTask] Creating new task object:', newTask);
     setTasks((prev) => [newTask, ...prev]);
     return newTask;
   };
 
   const updateTask = (updatedTask) => {
-    console.log('[TaskContext updateTask] Updating task:', updatedTask.id);
     setTasks((prev) => prev.map((t) => (t.id === updatedTask.id ? updatedTask : t)));
   };
 
   const deleteTask = (taskId) => {
-    console.log('[TaskContext deleteTask] Deleting task ID:', taskId);
     setTasks((prev) => prev.filter((t) => t.id !== taskId));
   };
 

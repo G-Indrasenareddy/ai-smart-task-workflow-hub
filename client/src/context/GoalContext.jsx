@@ -60,33 +60,26 @@ const initialGoalsData = [
 const GoalContext = createContext();
 
 export function GoalProvider({ children }) {
-  console.log('[GoalProvider] Rendering GoalProvider component');
-
   const [goals, setGoals] = useState(() => {
     try {
       const saved = localStorage.getItem('flowmind_goals');
-      console.log('[GoalContext init] Checking localStorage key flowmind_goals:', saved);
       if (saved !== null) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) {
-          console.log('[GoalContext init] Initialized state from localStorage. Total count:', parsed.length);
           return parsed;
         }
       }
     } catch (e) {
-      console.error('[GoalContext init] Error reading localStorage:', e);
+      console.error('Error loading flowmind_goals from localStorage:', e);
     }
-    console.log('[GoalContext init] Initialized state from fallback initialGoalsData. Total count:', initialGoalsData.length);
     return initialGoalsData;
   });
 
-  // Save to localStorage on state changes
   useEffect(() => {
     try {
-      console.log('[GoalContext useEffect] Saving goals to localStorage. Count:', goals.length);
       localStorage.setItem('flowmind_goals', JSON.stringify(goals));
     } catch (e) {
-      console.error('[GoalContext useEffect] Failed to save goals to localStorage', e);
+      console.error('Error saving flowmind_goals to localStorage:', e);
     }
   }, [goals]);
 
@@ -100,18 +93,15 @@ export function GoalProvider({ children }) {
       targetDate: newGoalData.targetDate || 'September 30, 2026',
       tasksCount: Number(newGoalData.tasksCount) || 0,
     };
-    console.log('[GoalContext createGoal] Creating new goal object:', newGoal);
     setGoals((prev) => [newGoal, ...prev]);
     return newGoal;
   };
 
   const updateGoal = (updatedGoal) => {
-    console.log('[GoalContext updateGoal] Updating goal:', updatedGoal.id);
     setGoals((prev) => prev.map((g) => (g.id === updatedGoal.id ? updatedGoal : g)));
   };
 
   const deleteGoal = (goalId) => {
-    console.log('[GoalContext deleteGoal] Deleting goal ID:', goalId);
     setGoals((prev) => prev.filter((g) => g.id !== goalId));
   };
 
