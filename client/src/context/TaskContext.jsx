@@ -110,46 +110,18 @@ export function TaskProvider({ children }) {
       dueDate: newTaskData.dueDate || 'Today',
     };
     console.log('[TaskContext createTask] Creating new task object:', newTask);
-
-    setTasks((prev) => {
-      const updated = [newTask, ...prev];
-      console.log('[TaskContext createTask] Updated tasks array count:', updated.length);
-      try {
-        localStorage.setItem('flowmind_tasks', JSON.stringify(updated));
-        console.log('[TaskContext createTask] Synchronous localStorage readback count:', JSON.parse(localStorage.getItem('flowmind_tasks')).length);
-      } catch (err) {
-        console.error(err);
-      }
-      return updated;
-    });
-
+    setTasks((prev) => [newTask, ...prev]);
     return newTask;
   };
 
   const updateTask = (updatedTask) => {
     console.log('[TaskContext updateTask] Updating task:', updatedTask.id);
-    setTasks((prev) => {
-      const updated = prev.map((t) => (t.id === updatedTask.id ? updatedTask : t));
-      try {
-        localStorage.setItem('flowmind_tasks', JSON.stringify(updated));
-      } catch (err) {
-        console.error(err);
-      }
-      return updated;
-    });
+    setTasks((prev) => prev.map((t) => (t.id === updatedTask.id ? updatedTask : t)));
   };
 
   const deleteTask = (taskId) => {
     console.log('[TaskContext deleteTask] Deleting task ID:', taskId);
-    setTasks((prev) => {
-      const updated = prev.filter((t) => t.id !== taskId);
-      try {
-        localStorage.setItem('flowmind_tasks', JSON.stringify(updated));
-      } catch (err) {
-        console.error(err);
-      }
-      return updated;
-    });
+    setTasks((prev) => prev.filter((t) => t.id !== taskId));
   };
 
   const toggleTaskStatus = (taskId) => {
@@ -158,21 +130,15 @@ export function TaskProvider({ children }) {
       'In Progress': 'Completed',
       'Completed': 'To Do',
     };
-    setTasks((prev) => {
-      const updated = prev.map((t) => {
+    setTasks((prev) =>
+      prev.map((t) => {
         if (t.id === taskId) {
           const updatedStatus = nextStatus[t.status] || 'To Do';
           return { ...t, status: updatedStatus };
         }
         return t;
-      });
-      try {
-        localStorage.setItem('flowmind_tasks', JSON.stringify(updated));
-      } catch (err) {
-        console.error(err);
-      }
-      return updated;
-    });
+      })
+    );
   };
 
   return (

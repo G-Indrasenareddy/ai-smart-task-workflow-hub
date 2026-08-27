@@ -101,46 +101,18 @@ export function GoalProvider({ children }) {
       tasksCount: Number(newGoalData.tasksCount) || 0,
     };
     console.log('[GoalContext createGoal] Creating new goal object:', newGoal);
-
-    setGoals((prev) => {
-      const updated = [newGoal, ...prev];
-      console.log('[GoalContext createGoal] Updated goals array count:', updated.length);
-      try {
-        localStorage.setItem('flowmind_goals', JSON.stringify(updated));
-        console.log('[GoalContext createGoal] Synchronous localStorage readback count:', JSON.parse(localStorage.getItem('flowmind_goals')).length);
-      } catch (err) {
-        console.error(err);
-      }
-      return updated;
-    });
-
+    setGoals((prev) => [newGoal, ...prev]);
     return newGoal;
   };
 
   const updateGoal = (updatedGoal) => {
     console.log('[GoalContext updateGoal] Updating goal:', updatedGoal.id);
-    setGoals((prev) => {
-      const updated = prev.map((g) => (g.id === updatedGoal.id ? updatedGoal : g));
-      try {
-        localStorage.setItem('flowmind_goals', JSON.stringify(updated));
-      } catch (err) {
-        console.error(err);
-      }
-      return updated;
-    });
+    setGoals((prev) => prev.map((g) => (g.id === updatedGoal.id ? updatedGoal : g)));
   };
 
   const deleteGoal = (goalId) => {
     console.log('[GoalContext deleteGoal] Deleting goal ID:', goalId);
-    setGoals((prev) => {
-      const updated = prev.filter((g) => g.id !== goalId);
-      try {
-        localStorage.setItem('flowmind_goals', JSON.stringify(updated));
-      } catch (err) {
-        console.error(err);
-      }
-      return updated;
-    });
+    setGoals((prev) => prev.filter((g) => g.id !== goalId));
   };
 
   return (

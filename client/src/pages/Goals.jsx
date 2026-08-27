@@ -18,39 +18,46 @@ export default function Goals() {
   const [deletingGoal, setDeletingGoal] = useState(null);
   const [toastMessage, setToastMessage] = useState('');
 
-  console.log('[Goals page render] Received goals count from useGoals():', goals.length, goals);
+  console.log('[Goals.jsx render] Received raw goals array from useGoals(). Count:', goals.length, goals);
 
   // Compute Goal Summaries Dynamically from Shared goals State
   const summaries = useMemo(() => {
     const total = goals.length;
-    const active = goals.filter((g) => g.status === 'Active').length;
-    const completed = goals.filter((g) => g.status === 'Completed').length;
-    const atRisk = goals.filter((g) => g.status === 'At Risk').length;
+    const active = goals.filter((g) => g && g.status === 'Active').length;
+    const completed = goals.filter((g) => g && g.status === 'Completed').length;
+    const atRisk = goals.filter((g) => g && g.status === 'At Risk').length;
+    console.log('[Goals.jsx summaries] total:', total, 'active:', active, 'completed:', completed, 'atRisk:', atRisk);
     return { total, active, completed, atRisk };
   }, [goals]);
 
-  // Filter & Sort Goals Dynamically with safe string dereferencing
+  // Filter & Sort Goals Dynamically with robust boolean matching
   const filteredGoals = useMemo(() => {
-    return goals
+    const term = (searchTerm || '').trim().toLowerCase();
+    const result = goals
       .filter((goal) => {
-        const titleMatch = goal.title && goal.title.toLowerCase().includes(searchTerm.toLowerCase());
-        const descMatch = goal.description && goal.description.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesSearch = titleMatch || descMatch;
+        if (!goal) return false;
+        const title = (goal.title || '').toLowerCase();
+        const desc = (goal.description || '').toLowerCase();
+        const matchesSearch = !term || title.includes(term) || desc.includes(term);
         const matchesStatus = statusFilter === 'All' || goal.status === statusFilter;
-        return matchesSearch && matchesStatus;
+        return Boolean(matchesSearch && matchesStatus);
       })
       .sort((a, b) => {
+        if (!a || !b) return 0;
         if (sortBy === 'title') return (a.title || '').localeCompare(b.title || '');
         if (sortBy === 'targetDate') return (a.targetDate || '').localeCompare(b.targetDate || '');
-        return (b.progress || 0) - (a.progress || 0);
+        return (Number(b.progress) || 0) - (Number(a.progress) || 0);
       });
+
+    console.log('[Goals.jsx filteredGoals] Raw count:', goals.length, 'Filtered count:', result.length, result);
+    return result;
   }, [goals, searchTerm, statusFilter, sortBy]);
 
   // Create Goal
   const handleCreateGoal = (newGoalData) => {
-    console.log('[Goals page handleCreateGoal] Calling createGoal with:', newGoalData);
+    console.log('[Goals.jsx handleCreateGoal] Submitting newGoalData:', newGoalData);
     const created = createGoal(newGoalData);
-    console.log('[Goals page handleCreateGoal] Goal created successfully:', created);
+    console.log('[Goals.jsx handleCreateGoal] Created goal returned:', created);
     setToastMessage('Goal created successfully!');
   };
 
