@@ -9,9 +9,9 @@ export default function Layout() {
       <Sidebar />
 
       {/* Main Content Container */}
-      <div className="flex-1 pl-64 flex flex-col min-h-screen">
+      <div className="flex-1 pl-64 flex flex-col min-h-screen bg-slate-950">
         <Header />
-        <main className="flex-1 p-6">
+        <main className="flex-1 p-6 bg-slate-950 flex flex-col">
           <Outlet />
         </main>
       </div>

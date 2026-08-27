@@ -136,7 +136,7 @@ export default function AIAssistant() {
   };
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto h-[calc(100vh-7rem)] flex flex-col">
+    <div className="space-y-6 max-w-7xl mx-auto flex-1 w-full flex flex-col">
       {/* 1. Header Section */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900/60 border border-slate-800 p-5 rounded-xl shrink-0">
         <div>
