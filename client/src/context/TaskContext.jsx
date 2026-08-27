@@ -70,27 +70,33 @@ const initialTasksData = [
 const TaskContext = createContext();
 
 export function TaskProvider({ children }) {
+  console.log('[TaskProvider] Rendering TaskProvider component');
+
   const [tasks, setTasks] = useState(() => {
     try {
       const saved = localStorage.getItem('flowmind_tasks');
+      console.log('[TaskContext init] Checking localStorage key flowmind_tasks:', saved);
       if (saved !== null) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) {
+          console.log('[TaskContext init] Initialized state from localStorage. Total count:', parsed.length);
           return parsed;
         }
       }
     } catch (e) {
-      console.error('Failed to load tasks from localStorage', e);
+      console.error('[TaskContext init] Error reading localStorage:', e);
     }
+    console.log('[TaskContext init] Initialized state from fallback initialTasksData. Total count:', initialTasksData.length);
     return initialTasksData;
   });
 
   // Save to localStorage on state changes
   useEffect(() => {
     try {
+      console.log('[TaskContext useEffect] Saving tasks to localStorage. Count:', tasks.length);
       localStorage.setItem('flowmind_tasks', JSON.stringify(tasks));
     } catch (e) {
-      console.error('Failed to save tasks to localStorage', e);
+      console.error('[TaskContext useEffect] Failed to save tasks to localStorage', e);
     }
   }, [tasks]);
 
@@ -103,16 +109,47 @@ export function TaskProvider({ children }) {
       priority: newTaskData.priority || 'Medium',
       dueDate: newTaskData.dueDate || 'Today',
     };
-    setTasks((prev) => [newTask, ...prev]);
+    console.log('[TaskContext createTask] Creating new task object:', newTask);
+
+    setTasks((prev) => {
+      const updated = [newTask, ...prev];
+      console.log('[TaskContext createTask] Updated tasks array count:', updated.length);
+      try {
+        localStorage.setItem('flowmind_tasks', JSON.stringify(updated));
+        console.log('[TaskContext createTask] Synchronous localStorage readback count:', JSON.parse(localStorage.getItem('flowmind_tasks')).length);
+      } catch (err) {
+        console.error(err);
+      }
+      return updated;
+    });
+
     return newTask;
   };
 
   const updateTask = (updatedTask) => {
-    setTasks((prev) => prev.map((t) => (t.id === updatedTask.id ? updatedTask : t)));
+    console.log('[TaskContext updateTask] Updating task:', updatedTask.id);
+    setTasks((prev) => {
+      const updated = prev.map((t) => (t.id === updatedTask.id ? updatedTask : t));
+      try {
+        localStorage.setItem('flowmind_tasks', JSON.stringify(updated));
+      } catch (err) {
+        console.error(err);
+      }
+      return updated;
+    });
   };
 
   const deleteTask = (taskId) => {
-    setTasks((prev) => prev.filter((t) => t.id !== taskId));
+    console.log('[TaskContext deleteTask] Deleting task ID:', taskId);
+    setTasks((prev) => {
+      const updated = prev.filter((t) => t.id !== taskId);
+      try {
+        localStorage.setItem('flowmind_tasks', JSON.stringify(updated));
+      } catch (err) {
+        console.error(err);
+      }
+      return updated;
+    });
   };
 
   const toggleTaskStatus = (taskId) => {
@@ -121,15 +158,21 @@ export function TaskProvider({ children }) {
       'In Progress': 'Completed',
       'Completed': 'To Do',
     };
-    setTasks((prev) =>
-      prev.map((t) => {
+    setTasks((prev) => {
+      const updated = prev.map((t) => {
         if (t.id === taskId) {
           const updatedStatus = nextStatus[t.status] || 'To Do';
           return { ...t, status: updatedStatus };
         }
         return t;
-      })
-    );
+      });
+      try {
+        localStorage.setItem('flowmind_tasks', JSON.stringify(updated));
+      } catch (err) {
+        console.error(err);
+      }
+      return updated;
+    });
   };
 
   return (

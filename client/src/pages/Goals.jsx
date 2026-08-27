@@ -18,6 +18,8 @@ export default function Goals() {
   const [deletingGoal, setDeletingGoal] = useState(null);
   const [toastMessage, setToastMessage] = useState('');
 
+  console.log('[Goals page render] Received goals count from useGoals():', goals.length, goals);
+
   // Compute Goal Summaries Dynamically from Shared goals State
   const summaries = useMemo(() => {
     const total = goals.length;
@@ -46,7 +48,9 @@ export default function Goals() {
 
   // Create Goal
   const handleCreateGoal = (newGoalData) => {
-    createGoal(newGoalData);
+    console.log('[Goals page handleCreateGoal] Calling createGoal with:', newGoalData);
+    const created = createGoal(newGoalData);
+    console.log('[Goals page handleCreateGoal] Goal created successfully:', created);
     setToastMessage('Goal created successfully!');
   };
 
