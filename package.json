@@ -1,0 +1,15 @@
+{
+  "name": "ai-smart-task-workflow-hub",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AI-Assisted Smart Task & Workflow Hub Monorepo",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:client": "npm --prefix client run dev",
+    "dev:server": "npm --prefix server run dev",
+    "install:all": "npm install && npm --prefix client install && npm --prefix server install"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
