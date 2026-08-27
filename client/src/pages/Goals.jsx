@@ -1,15 +1,5 @@
 import { useState, useMemo } from 'react';
-import {
-  Plus,
-  Search,
-  Filter,
-  ArrowUpDown,
-  Target,
-  CheckCircle2,
-  AlertTriangle,
-  Clock,
-} from 'lucide-react';
-
+import { Plus, Search, Filter, ArrowUpDown, Target, CheckCircle2, AlertTriangle, Clock } from 'lucide-react';
 import GoalStatsCard from '../components/GoalStatsCard';
 import GoalProgressCard from '../components/GoalProgressCard';
 import CreateGoalModal from '../components/CreateGoalModal';
@@ -17,13 +7,65 @@ import EditGoalModal from '../components/EditGoalModal';
 import ConfirmDeleteModal from '../components/ConfirmDeleteModal';
 import SuccessToast from '../components/SuccessToast';
 
-import { useGoals } from '../context/GoalContext';
+const initialGoalsData = [
+  {
+    id: 1,
+    title: 'Launch FlowMind AI Beta',
+    description: 'Prepare and launch the first beta version of FlowMind AI.',
+    progress: 75,
+    status: 'Active',
+    targetDate: 'September 30, 2026',
+    tasksCount: 8,
+  },
+  {
+    id: 2,
+    title: 'Complete Frontend Component Library',
+    description: 'Build reusable and responsive UI components.',
+    progress: 60,
+    status: 'Active',
+    targetDate: 'September 15, 2026',
+    tasksCount: 12,
+  },
+  {
+    id: 3,
+    title: 'Q3 User Acquisition Campaign',
+    description: 'Improve product awareness and attract early users.',
+    progress: 40,
+    status: 'At Risk',
+    targetDate: 'September 30, 2026',
+    tasksCount: 10,
+  },
+  {
+    id: 4,
+    title: 'Improve Backend API Architecture',
+    description: 'Create a scalable backend architecture for FlowMind AI.',
+    progress: 85,
+    status: 'Active',
+    targetDate: 'October 10, 2026',
+    tasksCount: 6,
+  },
+  {
+    id: 5,
+    title: 'Set Up Project Documentation',
+    description: 'Complete technical and project documentation.',
+    progress: 100,
+    status: 'Completed',
+    targetDate: 'August 20, 2026',
+    tasksCount: 5,
+  },
+  {
+    id: 6,
+    title: 'Initial UI Design System',
+    description: 'Create the initial visual design system for the application.',
+    progress: 100,
+    status: 'Completed',
+    targetDate: 'August 15, 2026',
+    tasksCount: 7,
+  },
+];
 
 export default function Goals() {
-  // Get shared goals state and actions from GoalContext
-  const { goals, createGoal, updateGoal, deleteGoal } = useGoals();
-
-  // Local UI state only
+  const [goals, setGoals] = useState(initialGoalsData);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [sortBy, setSortBy] = useState('progress');
@@ -32,63 +74,48 @@ export default function Goals() {
   const [deletingGoal, setDeletingGoal] = useState(null);
   const [toastMessage, setToastMessage] = useState('');
 
-  // Compute Goal Summaries
+  // Compute Goal Summaries Dynamically from goals State
   const summaries = useMemo(() => {
     const total = goals.length;
     const active = goals.filter((g) => g.status === 'Active').length;
     const completed = goals.filter((g) => g.status === 'Completed').length;
     const atRisk = goals.filter((g) => g.status === 'At Risk').length;
-
-    return {
-      total,
-      active,
-      completed,
-      atRisk,
-    };
+    return { total, active, completed, atRisk };
   }, [goals]);
 
-  // Filter and sort goals
+  // Filter & Sort Goals Dynamically
   const filteredGoals = useMemo(() => {
-    return [...goals]
+    const result = goals
       .filter((goal) => {
-        const search = searchTerm.toLowerCase();
-
-        const matchesSearch =
-          (goal.title || '').toLowerCase().includes(search) ||
-          (goal.description || '').toLowerCase().includes(search);
-
-        const matchesStatus =
-          statusFilter === 'All' || goal.status === statusFilter;
-
+        const matchesSearch = goal.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          goal.description.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesStatus = statusFilter === 'All' || goal.status === statusFilter;
         return matchesSearch && matchesStatus;
       })
       .sort((a, b) => {
-        if (sortBy === 'title') {
-          return (a.title || '').localeCompare(b.title || '');
-        }
-
-        if (sortBy === 'targetDate') {
-          return (a.targetDate || '').localeCompare(
-            b.targetDate || ''
-          );
-        }
-
-        return (b.progress || 0) - (a.progress || 0);
+        if (sortBy === 'title') return a.title.localeCompare(b.title);
+        if (sortBy === 'targetDate') return a.targetDate.localeCompare(b.targetDate);
+        return b.progress - a.progress;
       });
+
+    console.log('[Goals.jsx filteredGoals] Raw count:', goals.length, 'Filtered count:', result.length, result);
+    return result;
   }, [goals, searchTerm, statusFilter, sortBy]);
 
   // Create Goal
   const handleCreateGoal = (newGoalData) => {
-    createGoal(newGoalData);
-
+    const newGoal = {
+      id: Date.now() + Math.floor(Math.random() * 1000),
+      ...newGoalData,
+    };
+    setGoals((prev) => [newGoal, ...prev]);
     setToastMessage('Goal created successfully!');
     setIsCreateModalOpen(false);
   };
 
   // Save Edited Goal
   const handleSaveGoal = (updatedGoal) => {
-    updateGoal(updatedGoal);
-
+    setGoals((prev) => prev.map((g) => (g.id === updatedGoal.id ? updatedGoal : g)));
     setToastMessage('Goal updated successfully!');
     setEditingGoal(null);
   };
@@ -96,9 +123,7 @@ export default function Goals() {
   // Confirm Delete Goal
   const handleConfirmDeleteGoal = () => {
     if (!deletingGoal) return;
-
-    deleteGoal(deletingGoal.id);
-
+    setGoals((prev) => prev.filter((g) => g.id !== deletingGoal.id));
     setToastMessage('Goal deleted successfully!');
     setDeletingGoal(null);
   };

@@ -1,5 +1,7 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Plus, ListTodo, CheckCircle2, Clock, AlertCircle, Calendar } from 'lucide-react';
+import { useTasks } from '../context/TaskContext';
+import { useGoals } from '../context/GoalContext';
 import StatCard from '../components/StatCard';
 import TaskItem from '../components/TaskItem';
 import GoalProgress from '../components/GoalProgress';
@@ -7,111 +9,63 @@ import AIInsightCard from '../components/AIInsightCard';
 import CreateTaskModal from '../components/CreateTaskModal';
 import SuccessToast from '../components/SuccessToast';
 
-const statsData = [
-  {
-    icon: ListTodo,
-    label: 'Total Tasks',
-    value: '12',
-    trend: '+2 added this week',
-    trendType: 'positive',
-    iconBgColor: 'bg-indigo-500/10',
-    iconTextColor: 'text-indigo-400',
-  },
-  {
-    icon: CheckCircle2,
-    label: 'Completed',
-    value: '5',
-    trend: '41% completion rate',
-    trendType: 'positive',
-    iconBgColor: 'bg-emerald-500/10',
-    iconTextColor: 'text-emerald-400',
-  },
-  {
-    icon: Clock,
-    label: 'In Progress',
-    value: '4',
-    trend: '2 high priority',
-    trendType: 'warning',
-    iconBgColor: 'bg-amber-500/10',
-    iconTextColor: 'text-amber-400',
-  },
-  {
-    icon: AlertCircle,
-    label: 'Overdue',
-    value: '3',
-    trend: 'Requires attention',
-    trendType: 'negative',
-    iconBgColor: 'bg-rose-500/10',
-    iconTextColor: 'text-rose-400',
-  },
-];
-
-const initialMockTasks = [
-  {
-    id: 1,
-    title: 'Finalize Q3 Product Roadmap',
-    priority: 'High',
-    dueTime: '2:00 PM',
-    isCompleted: false,
-  },
-  {
-    id: 2,
-    title: 'Review Frontend Component Architecture',
-    priority: 'Medium',
-    dueTime: '4:30 PM',
-    isCompleted: false,
-  },
-  {
-    id: 3,
-    title: 'Update API Documentation Draft',
-    priority: 'Low',
-    dueTime: 'Today',
-    isCompleted: false,
-  },
-  {
-    id: 4,
-    title: 'Prepare Sprint Demo Slides',
-    priority: 'Medium',
-    dueTime: '11:00 AM',
-    isCompleted: true,
-  },
-];
-
-const mockGoals = [
-  {
-    id: 1,
-    title: 'Launch FlowMind AI Beta',
-    percentage: 75,
-    color: 'bg-indigo-500',
-  },
-  {
-    id: 2,
-    title: 'Complete Frontend Component Library',
-    percentage: 60,
-    color: 'bg-emerald-500',
-  },
-  {
-    id: 3,
-    title: 'Q3 User Acquisition Campaign',
-    percentage: 40,
-    color: 'bg-amber-500',
-  },
-];
-
 export default function Dashboard() {
-  const [tasks, setTasks] = useState(initialMockTasks);
+  const { tasks, createTask } = useTasks();
+  const { goals } = useGoals();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
 
+  // Dynamically compute Stats Cards from shared TaskContext state
+  const statsData = useMemo(() => {
+    const total = tasks.length;
+    const completed = tasks.filter((t) => t.status === 'Completed').length;
+    const inProgress = tasks.filter((t) => t.status === 'In Progress').length;
+    const overdue = tasks.filter((t) => t.status === 'To Do').length;
+
+    const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+    return [
+      {
+        icon: ListTodo,
+        label: 'Total Tasks',
+        value: total.toString(),
+        trend: 'Live task count',
+        trendType: 'positive',
+        iconBgColor: 'bg-indigo-500/10',
+        iconTextColor: 'text-indigo-400',
+      },
+      {
+        icon: CheckCircle2,
+        label: 'Completed',
+        value: completed.toString(),
+        trend: `${completionRate}% completion rate`,
+        trendType: 'positive',
+        iconBgColor: 'bg-emerald-500/10',
+        iconTextColor: 'text-emerald-400',
+      },
+      {
+        icon: Clock,
+        label: 'In Progress',
+        value: inProgress.toString(),
+        trend: 'Active work items',
+        trendType: 'warning',
+        iconBgColor: 'bg-amber-500/10',
+        iconTextColor: 'text-amber-400',
+      },
+      {
+        icon: AlertCircle,
+        label: 'Overdue',
+        value: overdue.toString(),
+        trend: 'Pending action',
+        trendType: 'negative',
+        iconBgColor: 'bg-rose-500/10',
+        iconTextColor: 'text-rose-400',
+      },
+    ];
+  }, [tasks]);
+
   const handleCreateTask = (newTaskData) => {
-    const newTask = {
-      id: Date.now(),
-      title: newTaskData.title,
-      priority: newTaskData.priority,
-      dueTime: newTaskData.dueDate || 'Today',
-      isCompleted: newTaskData.status === 'Completed',
-    };
-    setTasks((prev) => [newTask, ...prev]);
+    createTask(newTaskData);
     setToastMessage('Task created successfully!');
   };
 
@@ -174,8 +128,14 @@ export default function Dashboard() {
           </div>
 
           <div className="space-y-2.5">
-            {tasks.map((task) => (
-              <TaskItem key={task.id} {...task} />
+            {tasks.slice(0, 4).map((task) => (
+              <TaskItem
+                key={task.id}
+                title={task.title}
+                priority={task.priority}
+                dueTime={task.dueDate}
+                isCompleted={task.status === 'Completed'}
+              />
             ))}
           </div>
         </div>
@@ -187,13 +147,18 @@ export default function Dashboard() {
               Goal Progress
             </h2>
             <span className="text-xs text-slate-400 font-medium bg-slate-800 px-2.5 py-1 rounded-full">
-              3 Active
+              {goals.length} Active
             </span>
           </div>
 
           <div className="space-y-3">
-            {mockGoals.map((goal) => (
-              <GoalProgress key={goal.id} {...goal} />
+            {goals.slice(0, 3).map((goal) => (
+              <GoalProgress
+                key={goal.id}
+                title={goal.title}
+                percentage={goal.progress}
+                color={goal.status === 'Completed' ? 'bg-emerald-500' : goal.status === 'At Risk' ? 'bg-amber-500' : 'bg-indigo-500'}
+              />
             ))}
           </div>
         </div>
