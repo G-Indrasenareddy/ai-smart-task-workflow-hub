@@ -1,80 +1,14 @@
 import { useState, useMemo } from 'react';
 import { Plus, Search, Filter, ArrowUpDown, CheckCircle2, Clock, Circle, ListFilter } from 'lucide-react';
+import { useTasks } from '../context/TaskContext';
 import TaskRow from '../components/TaskRow';
 import CreateTaskModal from '../components/CreateTaskModal';
 import EditTaskModal from '../components/EditTaskModal';
 import ConfirmDeleteModal from '../components/ConfirmDeleteModal';
 import SuccessToast from '../components/SuccessToast';
 
-const initialTasksData = [
-  {
-    id: 1,
-    title: 'Finalize Dashboard UI',
-    description: 'Refine responsive layouts and card components.',
-    status: 'In Progress',
-    priority: 'High',
-    dueDate: 'Aug 28, 2026',
-  },
-  {
-    id: 2,
-    title: 'Review React Components',
-    description: 'Audit reusable component signatures and props.',
-    status: 'To Do',
-    priority: 'Medium',
-    dueDate: 'Aug 29, 2026',
-  },
-  {
-    id: 3,
-    title: 'Design MongoDB Schema',
-    description: 'Define Mongoose schemas for tasks and goals.',
-    status: 'To Do',
-    priority: 'High',
-    dueDate: 'Sep 01, 2026',
-  },
-  {
-    id: 4,
-    title: 'Implement Authentication',
-    description: 'Set up JWT auth middleware and user routes.',
-    status: 'To Do',
-    priority: 'High',
-    dueDate: 'Sep 03, 2026',
-  },
-  {
-    id: 5,
-    title: 'Test API Endpoints',
-    description: 'Perform integration testing across core REST routes.',
-    status: 'In Progress',
-    priority: 'Medium',
-    dueDate: 'Aug 30, 2026',
-  },
-  {
-    id: 6,
-    title: 'Update Project Documentation',
-    description: 'Complete sitemap, setup instructions, and architecture docs.',
-    status: 'Completed',
-    priority: 'Low',
-    dueDate: 'Aug 26, 2026',
-  },
-  {
-    id: 7,
-    title: 'Prepare Sprint Demo',
-    description: 'Build slides and record video walkthrough.',
-    status: 'In Progress',
-    priority: 'High',
-    dueDate: 'Aug 27, 2026',
-  },
-  {
-    id: 8,
-    title: 'Review AI Integration Plan',
-    description: 'Plan prompt templates and API client service.',
-    status: 'Completed',
-    priority: 'Low',
-    dueDate: 'Aug 25, 2026',
-  },
-];
-
 export default function Tasks() {
-  const [tasks, setTasks] = useState(initialTasksData);
+  const { tasks, createTask, updateTask, deleteTask, toggleTaskStatus } = useTasks();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [priorityFilter, setPriorityFilter] = useState('All');
@@ -84,7 +18,7 @@ export default function Tasks() {
   const [deletingTask, setDeletingTask] = useState(null);
   const [toastMessage, setToastMessage] = useState('');
 
-  // Compute Task Summaries Dynamically from tasks State
+  // Compute Task Summaries Dynamically from Shared tasks State
   const summaries = useMemo(() => {
     const total = tasks.length;
     const todo = tasks.filter((t) => t.status === 'To Do').length;
@@ -115,43 +49,28 @@ export default function Tasks() {
 
   // Create Task
   const handleCreateTask = (newTaskData) => {
-    const newTask = {
-      id: Date.now() + Math.floor(Math.random() * 1000),
-      ...newTaskData,
-    };
-    setTasks((prev) => [newTask, ...prev]);
+    createTask(newTaskData);
     setToastMessage('Task created successfully!');
   };
 
   // Save Edited Task
   const handleSaveTask = (updatedTask) => {
-    setTasks((prev) => prev.map((t) => (t.id === updatedTask.id ? updatedTask : t)));
+    updateTask(updatedTask);
     setToastMessage('Task updated successfully!');
   };
 
   // Confirm Delete Task
   const handleConfirmDeleteTask = () => {
     if (!deletingTask) return;
-    setTasks((prev) => prev.filter((t) => t.id !== deletingTask.id));
+    deleteTask(deletingTask.id);
     setToastMessage('Task deleted successfully!');
     setDeletingTask(null);
   };
 
-  // Toggle Task Status (To Do -> In Progress -> Completed -> To Do)
+  // Toggle Task Status
   const handleToggleStatus = (taskToToggle) => {
-    const nextStatus = {
-      'To Do': 'In Progress',
-      'In Progress': 'Completed',
-      'Completed': 'To Do',
-    };
-    const updatedStatus = nextStatus[taskToToggle.status] || 'To Do';
-
-    setTasks((prev) =>
-      prev.map((t) =>
-        t.id === taskToToggle.id ? { ...t, status: updatedStatus } : t
-      )
-    );
-    setToastMessage(`Task marked as ${updatedStatus}`);
+    toggleTaskStatus(taskToToggle.id);
+    setToastMessage('Task status updated!');
   };
 
   return (

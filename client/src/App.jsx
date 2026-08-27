@@ -1,4 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { TaskProvider } from './context/TaskContext';
+import { GoalProvider } from './context/GoalContext';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import Goals from './pages/Goals';
@@ -8,16 +10,20 @@ import Settings from './pages/Settings';
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Layout />}>
-          <Route index element={<Dashboard />} />
-          <Route path="goals" element={<Goals />} />
-          <Route path="tasks" element={<Tasks />} />
-          <Route path="ai-assistant" element={<AIAssistant />} />
-          <Route path="settings" element={<Settings />} />
-        </Route>
-      </Routes>
-    </BrowserRouter>
+    <TaskProvider>
+      <GoalProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Layout />}>
+              <Route index element={<Dashboard />} />
+              <Route path="goals" element={<Goals />} />
+              <Route path="tasks" element={<Tasks />} />
+              <Route path="ai-assistant" element={<AIAssistant />} />
+              <Route path="settings" element={<Settings />} />
+            </Route>
+          </Routes>
+        </BrowserRouter>
+      </GoalProvider>
+    </TaskProvider>
   );
 }
