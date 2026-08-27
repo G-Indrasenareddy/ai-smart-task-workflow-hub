@@ -136,9 +136,9 @@ export default function AIAssistant() {
   };
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto flex-1 w-full flex flex-col">
+    <div className="space-y-4 max-w-7xl mx-auto w-full flex-1 flex flex-col min-h-0 h-[calc(100vh-6.5rem)] overflow-hidden">
       {/* 1. Header Section */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900/60 border border-slate-800 p-5 rounded-xl shrink-0">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900/60 border border-slate-800 p-4 rounded-xl shrink-0">
         <div>
           <h1 className="text-2xl font-bold text-slate-100 tracking-tight">AI Assistant</h1>
           <p className="text-sm text-slate-400 mt-0.5">
@@ -154,9 +154,9 @@ export default function AIAssistant() {
       </div>
 
       {/* 2. Main Workspace Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-0">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-0 overflow-hidden">
         {/* Left Column: Quick Actions & Suggested Prompts */}
-        <div className="space-y-5 flex flex-col min-h-0">
+        <div className="space-y-4 flex flex-col min-h-0 overflow-y-auto pr-1">
           {/* Quick Actions Panel */}
           <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-3 shadow-sm">
             <div className="flex items-center gap-2 pb-2 border-b border-slate-800">
@@ -203,8 +203,8 @@ export default function AIAssistant() {
 
         {/* Right Column: Main Chat Window (Spans 2 cols on lg) */}
         <div className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-xl shadow-sm flex flex-col min-h-0 overflow-hidden">
-          {/* Chat Messages Container */}
-          <div className="flex-1 p-5 overflow-y-auto space-y-2">
+          {/* Chat Messages Container - Internal Scroll Only */}
+          <div className="flex-1 p-4 overflow-y-auto space-y-2 min-h-0">
             {messages.map((msg) => (
               <ChatMessage key={msg.id} message={msg} />
             ))}
@@ -212,8 +212,8 @@ export default function AIAssistant() {
             <div ref={chatBottomRef} />
           </div>
 
-          {/* Bottom Chat Input Bar */}
-          <div className="p-4 bg-slate-950/80 border-t border-slate-800">
+          {/* Bottom Chat Input Bar - Anchored to bottom */}
+          <div className="p-4 bg-slate-950/80 border-t border-slate-800 shrink-0">
             <div className="relative flex items-center">
               <input
                 type="text"
