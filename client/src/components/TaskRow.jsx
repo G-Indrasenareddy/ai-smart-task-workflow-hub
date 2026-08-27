@@ -1,8 +1,9 @@
-import { Calendar, MoreHorizontal } from 'lucide-react';
+import { Calendar } from 'lucide-react';
 import TaskStatusBadge from './TaskStatusBadge';
 import PriorityBadge from './PriorityBadge';
+import ActionDropdownMenu from './ActionDropdownMenu';
 
-export default function TaskRow({ task }) {
+export default function TaskRow({ task, onEdit, onDelete, onToggleStatus }) {
   return (
     <tr className="border-b border-slate-800/60 hover:bg-slate-800/30 transition-colors group">
       {/* 1. Task Title & Code */}
@@ -11,15 +12,25 @@ export default function TaskRow({ task }) {
           <span className={`text-sm font-medium ${task.status === 'Completed' ? 'line-through text-slate-500' : 'text-slate-200'}`}>
             {task.title}
           </span>
+          {task.description && (
+            <span className="text-xs text-slate-400 mt-0.5 line-clamp-1">{task.description}</span>
+          )}
           <span className="text-[11px] font-mono text-slate-500 mt-0.5">
             TASK-{task.id.toString().padStart(3, '0')}
           </span>
         </div>
       </td>
 
-      {/* 2. Status */}
+      {/* 2. Status (Clickable to toggle status) */}
       <td className="py-3.5 px-4">
-        <TaskStatusBadge status={task.status} />
+        <button
+          type="button"
+          onClick={() => onToggleStatus && onToggleStatus(task)}
+          className="focus:outline-none hover:opacity-80 transition-opacity"
+          title="Click to toggle status"
+        >
+          <TaskStatusBadge status={task.status} />
+        </button>
       </td>
 
       {/* 3. Priority */}
@@ -35,15 +46,12 @@ export default function TaskRow({ task }) {
         </div>
       </td>
 
-      {/* 5. Actions */}
+      {/* 5. Actions Dropdown */}
       <td className="py-3.5 px-4 text-right">
-        <button
-          type="button"
-          aria-label="Task options"
-          className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-lg transition-colors"
-        >
-          <MoreHorizontal className="w-4 h-4" />
-        </button>
+        <ActionDropdownMenu
+          onEdit={() => onEdit && onEdit(task)}
+          onDelete={() => onDelete && onDelete(task)}
+        />
       </td>
     </tr>
   );

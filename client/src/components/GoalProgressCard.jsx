@@ -1,7 +1,8 @@
-import { Calendar, CheckSquare, MoreHorizontal } from 'lucide-react';
+import { Calendar, CheckSquare } from 'lucide-react';
 import GoalStatusBadge from './GoalStatusBadge';
+import ActionDropdownMenu from './ActionDropdownMenu';
 
-export default function GoalProgressCard({ goal }) {
+export default function GoalProgressCard({ goal, onEdit, onDelete }) {
   const getProgressBarColor = (status) => {
     if (status === 'Completed') return 'bg-emerald-500';
     if (status === 'At Risk') return 'bg-rose-500';
@@ -18,13 +19,10 @@ export default function GoalProgressCard({ goal }) {
           </h3>
           <div className="flex items-center gap-1.5 shrink-0">
             <GoalStatusBadge status={goal.status} />
-            <button
-              type="button"
-              aria-label="Goal actions"
-              className="p-1 text-slate-500 hover:text-slate-200 hover:bg-slate-800 rounded transition-colors"
-            >
-              <MoreHorizontal className="w-4 h-4" />
-            </button>
+            <ActionDropdownMenu
+              onEdit={() => onEdit && onEdit(goal)}
+              onDelete={() => onDelete && onDelete(goal)}
+            />
           </div>
         </div>
         <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed">

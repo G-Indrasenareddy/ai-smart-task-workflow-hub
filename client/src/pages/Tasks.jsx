@@ -2,12 +2,15 @@ import { useState, useMemo } from 'react';
 import { Plus, Search, Filter, ArrowUpDown, CheckCircle2, Clock, Circle, ListFilter } from 'lucide-react';
 import TaskRow from '../components/TaskRow';
 import CreateTaskModal from '../components/CreateTaskModal';
+import EditTaskModal from '../components/EditTaskModal';
+import ConfirmDeleteModal from '../components/ConfirmDeleteModal';
 import SuccessToast from '../components/SuccessToast';
 
 const initialTasksData = [
   {
     id: 1,
     title: 'Finalize Dashboard UI',
+    description: 'Refine responsive layouts and card components.',
     status: 'In Progress',
     priority: 'High',
     dueDate: 'Aug 28, 2026',
@@ -15,6 +18,7 @@ const initialTasksData = [
   {
     id: 2,
     title: 'Review React Components',
+    description: 'Audit reusable component signatures and props.',
     status: 'To Do',
     priority: 'Medium',
     dueDate: 'Aug 29, 2026',
@@ -22,6 +26,7 @@ const initialTasksData = [
   {
     id: 3,
     title: 'Design MongoDB Schema',
+    description: 'Define Mongoose schemas for tasks and goals.',
     status: 'To Do',
     priority: 'High',
     dueDate: 'Sep 01, 2026',
@@ -29,6 +34,7 @@ const initialTasksData = [
   {
     id: 4,
     title: 'Implement Authentication',
+    description: 'Set up JWT auth middleware and user routes.',
     status: 'To Do',
     priority: 'High',
     dueDate: 'Sep 03, 2026',
@@ -36,6 +42,7 @@ const initialTasksData = [
   {
     id: 5,
     title: 'Test API Endpoints',
+    description: 'Perform integration testing across core REST routes.',
     status: 'In Progress',
     priority: 'Medium',
     dueDate: 'Aug 30, 2026',
@@ -43,6 +50,7 @@ const initialTasksData = [
   {
     id: 6,
     title: 'Update Project Documentation',
+    description: 'Complete sitemap, setup instructions, and architecture docs.',
     status: 'Completed',
     priority: 'Low',
     dueDate: 'Aug 26, 2026',
@@ -50,6 +58,7 @@ const initialTasksData = [
   {
     id: 7,
     title: 'Prepare Sprint Demo',
+    description: 'Build slides and record video walkthrough.',
     status: 'In Progress',
     priority: 'High',
     dueDate: 'Aug 27, 2026',
@@ -57,6 +66,7 @@ const initialTasksData = [
   {
     id: 8,
     title: 'Review AI Integration Plan',
+    description: 'Plan prompt templates and API client service.',
     status: 'Completed',
     priority: 'Low',
     dueDate: 'Aug 25, 2026',
@@ -69,7 +79,9 @@ export default function Tasks() {
   const [statusFilter, setStatusFilter] = useState('All');
   const [priorityFilter, setPriorityFilter] = useState('All');
   const [sortBy, setSortBy] = useState('dueDate');
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState(null);
+  const [deletingTask, setDeletingTask] = useState(null);
   const [toastMessage, setToastMessage] = useState('');
 
   // Compute Task Summaries Dynamically from tasks State
@@ -85,7 +97,8 @@ export default function Tasks() {
   const filteredTasks = useMemo(() => {
     return tasks
       .filter((task) => {
-        const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (task.description && task.description.toLowerCase().includes(searchTerm.toLowerCase()));
         const matchesStatus = statusFilter === 'All' || task.status === statusFilter;
         const matchesPriority = priorityFilter === 'All' || task.priority === priorityFilter;
         return matchesSearch && matchesStatus && matchesPriority;
@@ -100,14 +113,45 @@ export default function Tasks() {
       });
   }, [tasks, searchTerm, statusFilter, priorityFilter, sortBy]);
 
-  // Handle New Task Creation
+  // Create Task
   const handleCreateTask = (newTaskData) => {
     const newTask = {
-      id: Date.now(),
+      id: Date.now() + Math.floor(Math.random() * 1000),
       ...newTaskData,
     };
     setTasks((prev) => [newTask, ...prev]);
     setToastMessage('Task created successfully!');
+  };
+
+  // Save Edited Task
+  const handleSaveTask = (updatedTask) => {
+    setTasks((prev) => prev.map((t) => (t.id === updatedTask.id ? updatedTask : t)));
+    setToastMessage('Task updated successfully!');
+  };
+
+  // Confirm Delete Task
+  const handleConfirmDeleteTask = () => {
+    if (!deletingTask) return;
+    setTasks((prev) => prev.filter((t) => t.id !== deletingTask.id));
+    setToastMessage('Task deleted successfully!');
+    setDeletingTask(null);
+  };
+
+  // Toggle Task Status (To Do -> In Progress -> Completed -> To Do)
+  const handleToggleStatus = (taskToToggle) => {
+    const nextStatus = {
+      'To Do': 'In Progress',
+      'In Progress': 'Completed',
+      'Completed': 'To Do',
+    };
+    const updatedStatus = nextStatus[taskToToggle.status] || 'To Do';
+
+    setTasks((prev) =>
+      prev.map((t) =>
+        t.id === taskToToggle.id ? { ...t, status: updatedStatus } : t
+      )
+    );
+    setToastMessage(`Task marked as ${updatedStatus}`);
   };
 
   return (
@@ -119,9 +163,25 @@ export default function Tasks() {
 
       {/* Create Task Modal */}
       <CreateTaskModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
         onCreateTask={handleCreateTask}
+      />
+
+      {/* Edit Task Modal */}
+      <EditTaskModal
+        isOpen={!!editingTask}
+        task={editingTask}
+        onClose={() => setEditingTask(null)}
+        onSaveTask={handleSaveTask}
+      />
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmDeleteModal
+        isOpen={!!deletingTask}
+        itemTitle={deletingTask?.title}
+        onClose={() => setDeletingTask(null)}
+        onConfirm={handleConfirmDeleteTask}
       />
 
       {/* 1. Tasks Page Header */}
@@ -135,7 +195,7 @@ export default function Tasks() {
 
         <button
           type="button"
-          onClick={() => setIsModalOpen(true)}
+          onClick={() => setIsCreateModalOpen(true)}
           className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold rounded-lg shadow-md transition-all shrink-0"
         >
           <Plus className="w-4 h-4" />
@@ -275,7 +335,13 @@ export default function Tasks() {
               </thead>
               <tbody>
                 {filteredTasks.map((task) => (
-                  <TaskRow key={task.id} task={task} />
+                  <TaskRow
+                    key={task.id}
+                    task={task}
+                    onEdit={(t) => setEditingTask(t)}
+                    onDelete={(t) => setDeletingTask(t)}
+                    onToggleStatus={handleToggleStatus}
+                  />
                 ))}
               </tbody>
             </table>

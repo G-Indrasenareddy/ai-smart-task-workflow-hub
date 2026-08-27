@@ -3,6 +3,8 @@ import { Plus, Search, Filter, ArrowUpDown, Target, CheckCircle2, AlertTriangle,
 import GoalStatsCard from '../components/GoalStatsCard';
 import GoalProgressCard from '../components/GoalProgressCard';
 import CreateGoalModal from '../components/CreateGoalModal';
+import EditGoalModal from '../components/EditGoalModal';
+import ConfirmDeleteModal from '../components/ConfirmDeleteModal';
 import SuccessToast from '../components/SuccessToast';
 
 const initialGoalsData = [
@@ -67,7 +69,9 @@ export default function Goals() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [sortBy, setSortBy] = useState('progress');
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [editingGoal, setEditingGoal] = useState(null);
+  const [deletingGoal, setDeletingGoal] = useState(null);
   const [toastMessage, setToastMessage] = useState('');
 
   // Compute Goal Summaries Dynamically from goals State
@@ -95,14 +99,28 @@ export default function Goals() {
       });
   }, [goals, searchTerm, statusFilter, sortBy]);
 
-  // Handle New Goal Creation
+  // Create Goal
   const handleCreateGoal = (newGoalData) => {
     const newGoal = {
-      id: Date.now(),
+      id: Date.now() + Math.floor(Math.random() * 1000),
       ...newGoalData,
     };
     setGoals((prev) => [newGoal, ...prev]);
     setToastMessage('Goal created successfully!');
+  };
+
+  // Save Edited Goal
+  const handleSaveGoal = (updatedGoal) => {
+    setGoals((prev) => prev.map((g) => (g.id === updatedGoal.id ? updatedGoal : g)));
+    setToastMessage('Goal updated successfully!');
+  };
+
+  // Confirm Delete Goal
+  const handleConfirmDeleteGoal = () => {
+    if (!deletingGoal) return;
+    setGoals((prev) => prev.filter((g) => g.id !== deletingGoal.id));
+    setToastMessage('Goal deleted successfully!');
+    setDeletingGoal(null);
   };
 
   return (
@@ -114,9 +132,25 @@ export default function Goals() {
 
       {/* Create Goal Modal */}
       <CreateGoalModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
         onCreateGoal={handleCreateGoal}
+      />
+
+      {/* Edit Goal Modal */}
+      <EditGoalModal
+        isOpen={!!editingGoal}
+        goal={editingGoal}
+        onClose={() => setEditingGoal(null)}
+        onSaveGoal={handleSaveGoal}
+      />
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmDeleteModal
+        isOpen={!!deletingGoal}
+        itemTitle={deletingGoal?.title}
+        onClose={() => setDeletingGoal(null)}
+        onConfirm={handleConfirmDeleteGoal}
       />
 
       {/* 1. Header Section */}
@@ -130,7 +164,7 @@ export default function Goals() {
 
         <button
           type="button"
-          onClick={() => setIsModalOpen(true)}
+          onClick={() => setIsCreateModalOpen(true)}
           className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold rounded-lg shadow-md transition-all shrink-0"
         >
           <Plus className="w-4 h-4" />
@@ -225,7 +259,12 @@ export default function Goals() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {filteredGoals.map((goal) => (
-            <GoalProgressCard key={goal.id} goal={goal} />
+            <GoalProgressCard
+              key={goal.id}
+              goal={goal}
+              onEdit={(g) => setEditingGoal(g)}
+              onDelete={(g) => setDeletingGoal(g)}
+            />
           ))}
         </div>
       )}
