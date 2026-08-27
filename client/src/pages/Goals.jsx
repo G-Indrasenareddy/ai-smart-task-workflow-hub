@@ -1,5 +1,15 @@
 import { useState, useMemo } from 'react';
-import { Plus, Search, Filter, ArrowUpDown, Target, CheckCircle2, AlertTriangle, Clock } from 'lucide-react';
+import {
+  Plus,
+  Search,
+  Filter,
+  ArrowUpDown,
+  Target,
+  CheckCircle2,
+  AlertTriangle,
+  Clock,
+} from 'lucide-react';
+
 import GoalStatsCard from '../components/GoalStatsCard';
 import GoalProgressCard from '../components/GoalProgressCard';
 import CreateGoalModal from '../components/CreateGoalModal';
@@ -7,65 +17,13 @@ import EditGoalModal from '../components/EditGoalModal';
 import ConfirmDeleteModal from '../components/ConfirmDeleteModal';
 import SuccessToast from '../components/SuccessToast';
 
-const initialGoalsData = [
-  {
-    id: 1,
-    title: 'Launch FlowMind AI Beta',
-    description: 'Prepare and launch the first beta version of FlowMind AI.',
-    progress: 75,
-    status: 'Active',
-    targetDate: 'September 30, 2026',
-    tasksCount: 8,
-  },
-  {
-    id: 2,
-    title: 'Complete Frontend Component Library',
-    description: 'Build reusable and responsive UI components.',
-    progress: 60,
-    status: 'Active',
-    targetDate: 'September 15, 2026',
-    tasksCount: 12,
-  },
-  {
-    id: 3,
-    title: 'Q3 User Acquisition Campaign',
-    description: 'Improve product awareness and attract early users.',
-    progress: 40,
-    status: 'At Risk',
-    targetDate: 'September 30, 2026',
-    tasksCount: 10,
-  },
-  {
-    id: 4,
-    title: 'Improve Backend API Architecture',
-    description: 'Create a scalable backend architecture for FlowMind AI.',
-    progress: 85,
-    status: 'Active',
-    targetDate: 'October 10, 2026',
-    tasksCount: 6,
-  },
-  {
-    id: 5,
-    title: 'Set Up Project Documentation',
-    description: 'Complete technical and project documentation.',
-    progress: 100,
-    status: 'Completed',
-    targetDate: 'August 20, 2026',
-    tasksCount: 5,
-  },
-  {
-    id: 6,
-    title: 'Initial UI Design System',
-    description: 'Create the initial visual design system for the application.',
-    progress: 100,
-    status: 'Completed',
-    targetDate: 'August 15, 2026',
-    tasksCount: 7,
-  },
-];
+import { useGoals } from '../context/GoalContext';
 
 export default function Goals() {
-  const [goals, setGoals] = useState(initialGoalsData);
+  // Get shared goals state and actions from GoalContext
+  const { goals, createGoal, updateGoal, deleteGoal } = useGoals();
+
+  // Local UI state only
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [sortBy, setSortBy] = useState('progress');
@@ -74,51 +32,73 @@ export default function Goals() {
   const [deletingGoal, setDeletingGoal] = useState(null);
   const [toastMessage, setToastMessage] = useState('');
 
-  // Compute Goal Summaries Dynamically from goals State
+  // Compute Goal Summaries
   const summaries = useMemo(() => {
     const total = goals.length;
     const active = goals.filter((g) => g.status === 'Active').length;
     const completed = goals.filter((g) => g.status === 'Completed').length;
     const atRisk = goals.filter((g) => g.status === 'At Risk').length;
-    return { total, active, completed, atRisk };
+
+    return {
+      total,
+      active,
+      completed,
+      atRisk,
+    };
   }, [goals]);
 
-  // Filter & Sort Goals Dynamically
+  // Filter and sort goals
   const filteredGoals = useMemo(() => {
-    return goals
+    return [...goals]
       .filter((goal) => {
-        const matchesSearch = goal.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          goal.description.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesStatus = statusFilter === 'All' || goal.status === statusFilter;
+        const search = searchTerm.toLowerCase();
+
+        const matchesSearch =
+          (goal.title || '').toLowerCase().includes(search) ||
+          (goal.description || '').toLowerCase().includes(search);
+
+        const matchesStatus =
+          statusFilter === 'All' || goal.status === statusFilter;
+
         return matchesSearch && matchesStatus;
       })
       .sort((a, b) => {
-        if (sortBy === 'title') return a.title.localeCompare(b.title);
-        if (sortBy === 'targetDate') return a.targetDate.localeCompare(b.targetDate);
-        return b.progress - a.progress;
+        if (sortBy === 'title') {
+          return (a.title || '').localeCompare(b.title || '');
+        }
+
+        if (sortBy === 'targetDate') {
+          return (a.targetDate || '').localeCompare(
+            b.targetDate || ''
+          );
+        }
+
+        return (b.progress || 0) - (a.progress || 0);
       });
   }, [goals, searchTerm, statusFilter, sortBy]);
 
   // Create Goal
   const handleCreateGoal = (newGoalData) => {
-    const newGoal = {
-      id: Date.now() + Math.floor(Math.random() * 1000),
-      ...newGoalData,
-    };
-    setGoals((prev) => [newGoal, ...prev]);
+    createGoal(newGoalData);
+
     setToastMessage('Goal created successfully!');
+    setIsCreateModalOpen(false);
   };
 
   // Save Edited Goal
   const handleSaveGoal = (updatedGoal) => {
-    setGoals((prev) => prev.map((g) => (g.id === updatedGoal.id ? updatedGoal : g)));
+    updateGoal(updatedGoal);
+
     setToastMessage('Goal updated successfully!');
+    setEditingGoal(null);
   };
 
   // Confirm Delete Goal
   const handleConfirmDeleteGoal = () => {
     if (!deletingGoal) return;
-    setGoals((prev) => prev.filter((g) => g.id !== deletingGoal.id));
+
+    deleteGoal(deletingGoal.id);
+
     setToastMessage('Goal deleted successfully!');
     setDeletingGoal(null);
   };
@@ -127,7 +107,10 @@ export default function Goals() {
     <div className="space-y-6 max-w-7xl mx-auto">
       {/* Toast Notification */}
       {toastMessage && (
-        <SuccessToast message={toastMessage} onClose={() => setToastMessage('')} />
+        <SuccessToast
+          message={toastMessage}
+          onClose={() => setToastMessage('')}
+        />
       )}
 
       {/* Create Goal Modal */}
@@ -153,10 +136,13 @@ export default function Goals() {
         onConfirm={handleConfirmDeleteGoal}
       />
 
-      {/* 1. Header Section */}
+      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900/60 border border-slate-800 p-6 rounded-xl">
         <div>
-          <h1 className="text-2xl font-bold text-slate-100 tracking-tight">Goals</h1>
+          <h1 className="text-2xl font-bold text-slate-100 tracking-tight">
+            Goals
+          </h1>
+
           <p className="text-sm text-slate-400 mt-1">
             Define your objectives and track your progress.
           </p>
@@ -172,7 +158,7 @@ export default function Goals() {
         </button>
       </div>
 
-      {/* 2. Summary Metrics */}
+      {/* Summary Metrics */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <GoalStatsCard
           label="Total Goals"
@@ -181,6 +167,7 @@ export default function Goals() {
           iconBgColor="bg-slate-800"
           iconTextColor="text-slate-300"
         />
+
         <GoalStatsCard
           label="Active"
           value={summaries.active}
@@ -188,6 +175,7 @@ export default function Goals() {
           iconBgColor="bg-indigo-500/10"
           iconTextColor="text-indigo-400"
         />
+
         <GoalStatsCard
           label="Completed"
           value={summaries.completed}
@@ -195,6 +183,7 @@ export default function Goals() {
           iconBgColor="bg-emerald-500/10"
           iconTextColor="text-emerald-400"
         />
+
         <GoalStatsCard
           label="At Risk"
           value={summaries.atRisk}
@@ -204,11 +193,12 @@ export default function Goals() {
         />
       </div>
 
-      {/* 3. Search & Filter Toolbar */}
+      {/* Search and Filter Toolbar */}
       <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col md:flex-row items-center justify-between gap-3">
         {/* Search Input */}
         <div className="relative w-full md:w-72">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+
           <input
             type="text"
             placeholder="Search goals..."
@@ -218,40 +208,61 @@ export default function Goals() {
           />
         </div>
 
-        {/* Filter & Sort Controls */}
+        {/* Filter and Sort Controls */}
         <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto">
           {/* Status Filter */}
           <div className="flex items-center gap-1.5 bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5">
             <Filter className="w-3.5 h-3.5 text-slate-400" />
+
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               className="bg-transparent text-xs font-medium text-slate-300 focus:outline-none cursor-pointer"
             >
-              <option value="All" className="bg-slate-900">All Goals</option>
-              <option value="Active" className="bg-slate-900">Active</option>
-              <option value="Completed" className="bg-slate-900">Completed</option>
-              <option value="At Risk" className="bg-slate-900">At Risk</option>
+              <option value="All" className="bg-slate-900">
+                All Goals
+              </option>
+
+              <option value="Active" className="bg-slate-900">
+                Active
+              </option>
+
+              <option value="Completed" className="bg-slate-900">
+                Completed
+              </option>
+
+              <option value="At Risk" className="bg-slate-900">
+                At Risk
+              </option>
             </select>
           </div>
 
           {/* Sort Dropdown */}
           <div className="flex items-center gap-1.5 bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5">
             <ArrowUpDown className="w-3.5 h-3.5 text-slate-400" />
+
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
               className="bg-transparent text-xs font-medium text-slate-300 focus:outline-none cursor-pointer"
             >
-              <option value="progress" className="bg-slate-900">Sort by Progress</option>
-              <option value="targetDate" className="bg-slate-900">Sort by Target Date</option>
-              <option value="title" className="bg-slate-900">Sort by Title</option>
+              <option value="progress" className="bg-slate-900">
+                Sort by Progress
+              </option>
+
+              <option value="targetDate" className="bg-slate-900">
+                Sort by Target Date
+              </option>
+
+              <option value="title" className="bg-slate-900">
+                Sort by Title
+              </option>
             </select>
           </div>
         </div>
       </div>
 
-      {/* 4. Responsive Goals Grid */}
+      {/* Goals Grid */}
       {filteredGoals.length === 0 ? (
         <div className="bg-slate-900 border border-slate-800 rounded-xl p-8 text-center text-slate-400 text-sm">
           No goals match your search or filter criteria.
