@@ -8,17 +8,19 @@ body,
   color: #f8fafc;
 }
 
-/* Ensure native date picker calendar indicator is clearly visible on dark inputs */
+/* Ensure native date picker calendar indicator is bright and clearly visible on dark inputs */
 input[type="date"] {
   color-scheme: dark;
 }
 
 input[type="date"]::-webkit-calendar-picker-indicator {
-  filter: invert(1);
   cursor: pointer;
-  opacity: 0.85;
+  filter: invert(1) brightness(2.5);
+  opacity: 0.9;
+  padding: 4px;
 }
 
 input[type="date"]::-webkit-calendar-picker-indicator:hover {
   opacity: 1;
+  filter: invert(1) brightness(3);
 }
