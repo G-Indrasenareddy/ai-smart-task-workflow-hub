@@ -8,7 +8,7 @@ import ConfirmDeleteModal from '../components/ConfirmDeleteModal';
 import SuccessToast from '../components/SuccessToast';
 
 export default function Tasks() {
-  const { tasks, createTask, updateTask, deleteTask, toggleTaskStatus } = useTasks();
+  const { tasks, tasksLoading, tasksError, createTask, updateTask, deleteTask, toggleTaskStatus } = useTasks();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [priorityFilter, setPriorityFilter] = useState('All');
@@ -31,46 +31,69 @@ export default function Tasks() {
   const filteredTasks = useMemo(() => {
     return tasks
       .filter((task) => {
-        const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          (task.description && task.description.toLowerCase().includes(searchTerm.toLowerCase()));
+        if (!task) return false;
+        const title = (task.title || '').toLowerCase();
+        const desc = (task.description || '').toLowerCase();
+        const term = searchTerm.toLowerCase();
+        const matchesSearch = title.includes(term) || desc.includes(term);
         const matchesStatus = statusFilter === 'All' || task.status === statusFilter;
         const matchesPriority = priorityFilter === 'All' || task.priority === priorityFilter;
         return matchesSearch && matchesStatus && matchesPriority;
       })
       .sort((a, b) => {
-        if (sortBy === 'title') return a.title.localeCompare(b.title);
+        if (!a || !b) return 0;
+        if (sortBy === 'title') return (a.title || '').localeCompare(b.title || '');
         if (sortBy === 'priority') {
           const weights = { High: 3, Medium: 2, Low: 1 };
-          return weights[b.priority] - weights[a.priority];
+          return (weights[b.priority] || 0) - (weights[a.priority] || 0);
         }
-        return a.dueDate.localeCompare(b.dueDate);
+        return (a.dueDate || '').localeCompare(b.dueDate || '');
       });
   }, [tasks, searchTerm, statusFilter, priorityFilter, sortBy]);
 
   // Create Task
-  const handleCreateTask = (newTaskData) => {
-    createTask(newTaskData);
-    setToastMessage('Task created successfully!');
+  const handleCreateTask = async (newTaskData) => {
+    try {
+      await createTask(newTaskData);
+      setToastMessage('Task created successfully!');
+    } catch (err) {
+      alert('Error creating task: ' + err.message);
+    }
   };
 
   // Save Edited Task
-  const handleSaveTask = (updatedTask) => {
-    updateTask(updatedTask);
-    setToastMessage('Task updated successfully!');
+  const handleSaveTask = async (updatedTask) => {
+    try {
+      await updateTask(updatedTask);
+      setToastMessage('Task updated successfully!');
+      setEditingTask(null);
+    } catch (err) {
+      alert('Error updating task: ' + err.message);
+    }
   };
 
   // Confirm Delete Task
-  const handleConfirmDeleteTask = () => {
+  const handleConfirmDeleteTask = async () => {
     if (!deletingTask) return;
-    deleteTask(deletingTask.id);
-    setToastMessage('Task deleted successfully!');
-    setDeletingTask(null);
+    const taskId = deletingTask.id || deletingTask._id;
+    try {
+      await deleteTask(taskId);
+      setToastMessage('Task deleted successfully!');
+      setDeletingTask(null);
+    } catch (err) {
+      alert('Error deleting task: ' + err.message);
+    }
   };
 
   // Toggle Task Status
-  const handleToggleStatus = (taskToToggle) => {
-    toggleTaskStatus(taskToToggle.id);
-    setToastMessage('Task status updated!');
+  const handleToggleStatus = async (taskToToggle) => {
+    const taskId = taskToToggle.id || taskToToggle._id;
+    try {
+      await toggleTaskStatus(taskId);
+      setToastMessage('Task status updated!');
+    } catch (err) {
+      alert('Error updating task status: ' + err.message);
+    }
   };
 
   return (
@@ -78,6 +101,13 @@ export default function Tasks() {
       {/* Toast Notification */}
       {toastMessage && (
         <SuccessToast message={toastMessage} onClose={() => setToastMessage('')} />
+      )}
+
+      {/* Error Alert Banner */}
+      {tasksError && (
+        <div className="bg-amber-500/10 border border-amber-500/20 text-amber-400 px-4 py-3 rounded-xl text-sm flex items-center justify-between">
+          <span>⚠️ {tasksError}</span>
+        </div>
       )}
 
       {/* Create Task Modal */}
@@ -115,7 +145,7 @@ export default function Tasks() {
         <button
           type="button"
           onClick={() => setIsCreateModalOpen(true)}
-          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold rounded-lg shadow-md transition-all shrink-0"
+          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold rounded-lg shadow-md transition-all shrink-0 cursor-pointer"
         >
           <Plus className="w-4 h-4" />
           <span>Create Task</span>
@@ -236,7 +266,11 @@ export default function Tasks() {
 
       {/* 4. Tasks List Table */}
       <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-sm">
-        {filteredTasks.length === 0 ? (
+        {tasksLoading ? (
+          <div className="p-8 text-center text-slate-400 text-sm">
+            Loading tasks...
+          </div>
+        ) : filteredTasks.length === 0 ? (
           <div className="p-8 text-center text-slate-400 text-sm">
             No tasks match your search or filter criteria.
           </div>
@@ -255,7 +289,7 @@ export default function Tasks() {
               <tbody>
                 {filteredTasks.map((task) => (
                   <TaskRow
-                    key={task.id}
+                    key={task.id || task._id}
                     task={task}
                     onEdit={(t) => setEditingTask(t)}
                     onDelete={(t) => setDeletingTask(t)}

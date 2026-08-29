@@ -1,15 +1,28 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Save, User, Sliders, Bell, Bot, Palette, CheckCircle2, Info } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 import SettingsSection from '../components/SettingsSection';
 import SettingsToggle from '../components/SettingsToggle';
 import SettingsSelect from '../components/SettingsSelect';
 
 export default function Settings() {
-  // Local state for all settings
+  const { user } = useAuth();
+
+  // Local state for all settings initialized with AuthContext user
   const [profile, setProfile] = useState({
-    fullName: 'Indrasena',
-    email: 'indrasena@example.com',
+    fullName: user?.name || '',
+    email: user?.email || '',
   });
+
+  // Sync profile when authenticated user changes
+  useEffect(() => {
+    if (user) {
+      setProfile({
+        fullName: user.name || '',
+        email: user.email || '',
+      });
+    }
+  }, [user]);
 
   const [preferences, setPreferences] = useState({
     defaultPriority: 'Medium',
@@ -42,6 +55,13 @@ export default function Settings() {
       setShowSavedAlert(false);
     }, 3000);
   };
+
+  const userInitials = (profile.fullName || 'User')
+    .split(' ')
+    .map((n) => n[0])
+    .join('')
+    .substring(0, 2)
+    .toUpperCase();
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-6">
@@ -83,12 +103,12 @@ export default function Settings() {
             description="Manage your user name and email details."
           >
             <div className="flex items-center gap-4 pb-2">
-              <div className="w-12 h-12 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-200 font-bold text-lg">
-                IN
+              <div className="w-12 h-12 rounded-full bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 font-bold text-lg">
+                {userInitials}
               </div>
               <div>
-                <h3 className="text-sm font-semibold text-slate-200">{profile.fullName}</h3>
-                <p className="text-xs text-slate-400">{profile.email}</p>
+                <h3 className="text-sm font-semibold text-slate-200">{profile.fullName || 'User Profile'}</h3>
+                <p className="text-xs text-slate-400">{profile.email || 'No email set'}</p>
               </div>
             </div>
 

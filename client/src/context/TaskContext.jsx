@@ -1,140 +1,125 @@
-import { createContext, useContext, useState, useEffect } from 'react';
-
-const initialTasksData = [
-  {
-    id: 1,
-    title: 'Finalize Dashboard UI',
-    description: 'Refine responsive layouts and card components.',
-    status: 'In Progress',
-    priority: 'High',
-    dueDate: 'Aug 28, 2026',
-  },
-  {
-    id: 2,
-    title: 'Review React Components',
-    description: 'Audit reusable component signatures and props.',
-    status: 'To Do',
-    priority: 'Medium',
-    dueDate: 'Aug 29, 2026',
-  },
-  {
-    id: 3,
-    title: 'Design MongoDB Schema',
-    description: 'Define Mongoose schemas for tasks and goals.',
-    status: 'To Do',
-    priority: 'High',
-    dueDate: 'Sep 01, 2026',
-  },
-  {
-    id: 4,
-    title: 'Implement Authentication',
-    description: 'Set up JWT auth middleware and user routes.',
-    status: 'To Do',
-    priority: 'High',
-    dueDate: 'Sep 03, 2026',
-  },
-  {
-    id: 5,
-    title: 'Test API Endpoints',
-    description: 'Perform integration testing across core REST routes.',
-    status: 'In Progress',
-    priority: 'Medium',
-    dueDate: 'Aug 30, 2026',
-  },
-  {
-    id: 6,
-    title: 'Update Project Documentation',
-    description: 'Complete sitemap, setup instructions, and architecture docs.',
-    status: 'Completed',
-    priority: 'Low',
-    dueDate: 'Aug 26, 2026',
-  },
-  {
-    id: 7,
-    title: 'Prepare Sprint Demo',
-    description: 'Build slides and record video walkthrough.',
-    status: 'In Progress',
-    priority: 'High',
-    dueDate: 'Aug 27, 2026',
-  },
-  {
-    id: 8,
-    title: 'Review AI Integration Plan',
-    description: 'Plan prompt templates and API client service.',
-    status: 'Completed',
-    priority: 'Low',
-    dueDate: 'Aug 25, 2026',
-  },
-];
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { taskApi } from '../services/taskApi';
+import { useAuth } from './AuthContext';
 
 const TaskContext = createContext();
 
 export function TaskProvider({ children }) {
-  const [tasks, setTasks] = useState(() => {
+  const { user, isAuthenticated } = useAuth();
+  const [tasks, setTasks] = useState([]);
+  const [tasksLoading, setTasksLoading] = useState(false);
+  const [tasksError, setTasksError] = useState(null);
+
+  // Fetch Tasks for the currently authenticated user
+  const fetchTasks = useCallback(async () => {
+    if (!isAuthenticated || !user) {
+      setTasks([]);
+      setTasksLoading(false);
+      return;
+    }
+
+    setTasksLoading(true);
+    setTasksError(null);
     try {
-      const saved = localStorage.getItem('flowmind_tasks');
-      if (saved !== null) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
-          return parsed;
-        }
+      const data = await taskApi.getTasks();
+      setTasks(data);
+      // Cache user-scoped snapshot
+      try {
+        localStorage.setItem(`flowmind_tasks_${user.id}`, JSON.stringify(data));
+      } catch (e) {
+        // Ignore quota errors
       }
-    } catch (e) {
-      console.error('Error loading flowmind_tasks from localStorage:', e);
+    } catch (err) {
+      console.warn('[TaskContext] API fetch failed, loading user-scoped local snapshot:', err.message);
+      setTasksError('Backend API unreachable. Loaded local snapshot.');
+      try {
+        const saved = localStorage.getItem(`flowmind_tasks_${user.id}`);
+        if (saved !== null) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) {
+            setTasks(parsed);
+          }
+        }
+      } catch (e) {
+        console.error('[TaskContext] Error reading user-scoped local cache:', e);
+      }
+    } finally {
+      setTasksLoading(false);
     }
-    return initialTasksData;
-  });
+  }, [isAuthenticated, user]);
 
+  // Re-fetch or clear tasks when user authentication state changes
   useEffect(() => {
-    try {
-      localStorage.setItem('flowmind_tasks', JSON.stringify(tasks));
-    } catch (e) {
-      console.error('Error saving flowmind_tasks to localStorage:', e);
+    if (isAuthenticated && user) {
+      fetchTasks();
+    } else {
+      setTasks([]);
+      setTasksLoading(false);
+      setTasksError(null);
     }
-  }, [tasks]);
+  }, [isAuthenticated, user, fetchTasks]);
 
-  const createTask = (newTaskData) => {
-    const newTask = {
-      id: Date.now() + Math.floor(Math.random() * 1000),
-      title: newTaskData.title || 'New Task',
-      description: newTaskData.description || '',
-      status: newTaskData.status || 'To Do',
-      priority: newTaskData.priority || 'Medium',
-      dueDate: newTaskData.dueDate || 'Today',
-    };
-    setTasks((prev) => [newTask, ...prev]);
-    return newTask;
+  const createTask = async (newTaskData) => {
+    try {
+      const created = await taskApi.createTask(newTaskData);
+      setTasks((prev) => [created, ...prev]);
+      return created;
+    } catch (err) {
+      console.error('[TaskContext createTask Error]:', err.message);
+      throw err;
+    }
   };
 
-  const updateTask = (updatedTask) => {
-    setTasks((prev) => prev.map((t) => (t.id === updatedTask.id ? updatedTask : t)));
+  const updateTask = async (updatedTask) => {
+    try {
+      const taskId = updatedTask.id || updatedTask._id;
+      const updated = await taskApi.updateTask(taskId, updatedTask);
+      setTasks((prev) => prev.map((t) => ((t.id || t._id) === taskId ? updated : t)));
+      return updated;
+    } catch (err) {
+      console.error('[TaskContext updateTask Error]:', err.message);
+      throw err;
+    }
   };
 
-  const deleteTask = (taskId) => {
-    setTasks((prev) => prev.filter((t) => t.id !== taskId));
+  const deleteTask = async (taskId) => {
+    try {
+      await taskApi.deleteTask(taskId);
+      setTasks((prev) => prev.filter((t) => (t.id || t._id) !== taskId));
+    } catch (err) {
+      console.error('[TaskContext deleteTask Error]:', err.message);
+      throw err;
+    }
   };
 
-  const toggleTaskStatus = (taskId) => {
+  const toggleTaskStatus = async (taskId) => {
+    const task = tasks.find((t) => (t.id || t._id) === taskId);
+    if (!task) return;
+
     const nextStatus = {
       'To Do': 'In Progress',
       'In Progress': 'Completed',
       'Completed': 'To Do',
     };
-    setTasks((prev) =>
-      prev.map((t) => {
-        if (t.id === taskId) {
-          const updatedStatus = nextStatus[t.status] || 'To Do';
-          return { ...t, status: updatedStatus };
-        }
-        return t;
-      })
-    );
+    const updatedStatus = nextStatus[task.status] || 'To Do';
+
+    try {
+      const updated = await taskApi.updateTask(taskId, { status: updatedStatus });
+      setTasks((prev) => prev.map((t) => ((t.id || t._id) === taskId ? updated : t)));
+      return updated;
+    } catch (err) {
+      console.error('[TaskContext toggleTaskStatus Error]:', err.message);
+      throw err;
+    }
   };
 
   return (
     <TaskContext.Provider
       value={{
         tasks,
+        tasksLoading,
+        tasksError,
+        fetchTasks,
         createTask,
         updateTask,
         deleteTask,

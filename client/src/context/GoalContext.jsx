@@ -1,114 +1,104 @@
-import { createContext, useContext, useState, useEffect } from 'react';
-
-const initialGoalsData = [
-  {
-    id: 1,
-    title: 'Launch FlowMind AI Beta',
-    description: 'Prepare and launch the first beta version of FlowMind AI.',
-    progress: 75,
-    status: 'Active',
-    targetDate: 'September 30, 2026',
-    tasksCount: 8,
-  },
-  {
-    id: 2,
-    title: 'Complete Frontend Component Library',
-    description: 'Build reusable and responsive UI components.',
-    progress: 60,
-    status: 'Active',
-    targetDate: 'September 15, 2026',
-    tasksCount: 12,
-  },
-  {
-    id: 3,
-    title: 'Q3 User Acquisition Campaign',
-    description: 'Improve product awareness and attract early users.',
-    progress: 40,
-    status: 'At Risk',
-    targetDate: 'September 30, 2026',
-    tasksCount: 10,
-  },
-  {
-    id: 4,
-    title: 'Improve Backend API Architecture',
-    description: 'Create a scalable backend architecture for FlowMind AI.',
-    progress: 85,
-    status: 'Active',
-    targetDate: 'October 10, 2026',
-    tasksCount: 6,
-  },
-  {
-    id: 5,
-    title: 'Set Up Project Documentation',
-    description: 'Complete technical and project documentation.',
-    progress: 100,
-    status: 'Completed',
-    targetDate: 'August 20, 2026',
-    tasksCount: 5,
-  },
-  {
-    id: 6,
-    title: 'Initial UI Design System',
-    description: 'Create the initial visual design system for the application.',
-    progress: 100,
-    status: 'Completed',
-    targetDate: 'August 15, 2026',
-    tasksCount: 7,
-  },
-];
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { goalApi } from '../services/goalApi';
+import { useAuth } from './AuthContext';
 
 const GoalContext = createContext();
 
 export function GoalProvider({ children }) {
-  const [goals, setGoals] = useState(() => {
+  const { user, isAuthenticated } = useAuth();
+  const [goals, setGoals] = useState([]);
+  const [goalsLoading, setGoalsLoading] = useState(false);
+  const [goalsError, setGoalsError] = useState(null);
+
+  // Fetch Goals for the currently authenticated user
+  const fetchGoals = useCallback(async () => {
+    if (!isAuthenticated || !user) {
+      setGoals([]);
+      setGoalsLoading(false);
+      return;
+    }
+
+    setGoalsLoading(true);
+    setGoalsError(null);
     try {
-      const saved = localStorage.getItem('flowmind_goals');
-      if (saved !== null) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
-          return parsed;
-        }
+      const data = await goalApi.getGoals();
+      setGoals(data);
+      // Cache user-scoped snapshot
+      try {
+        localStorage.setItem(`flowmind_goals_${user.id}`, JSON.stringify(data));
+      } catch (e) {
+        // Ignore quota errors
       }
-    } catch (e) {
-      console.error('Error loading flowmind_goals from localStorage:', e);
+    } catch (err) {
+      console.warn('[GoalContext] API fetch failed, loading user-scoped local snapshot:', err.message);
+      setGoalsError('Backend API unreachable. Loaded local snapshot.');
+      try {
+        const saved = localStorage.getItem(`flowmind_goals_${user.id}`);
+        if (saved !== null) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) {
+            setGoals(parsed);
+          }
+        }
+      } catch (e) {
+        console.error('[GoalContext] Error reading user-scoped local cache:', e);
+      }
+    } finally {
+      setGoalsLoading(false);
     }
-    return initialGoalsData;
-  });
+  }, [isAuthenticated, user]);
 
+  // Re-fetch or clear goals when user authentication state changes
   useEffect(() => {
-    try {
-      localStorage.setItem('flowmind_goals', JSON.stringify(goals));
-    } catch (e) {
-      console.error('Error saving flowmind_goals to localStorage:', e);
+    if (isAuthenticated && user) {
+      fetchGoals();
+    } else {
+      setGoals([]);
+      setGoalsLoading(false);
+      setGoalsError(null);
     }
-  }, [goals]);
+  }, [isAuthenticated, user, fetchGoals]);
 
-  const createGoal = (newGoalData) => {
-    const newGoal = {
-      id: Date.now() + Math.floor(Math.random() * 1000),
-      title: newGoalData.title || 'New Goal',
-      description: newGoalData.description || '',
-      progress: Number(newGoalData.progress) || 0,
-      status: newGoalData.status || 'Active',
-      targetDate: newGoalData.targetDate || 'September 30, 2026',
-      tasksCount: Number(newGoalData.tasksCount) || 0,
-    };
-    setGoals((prev) => [newGoal, ...prev]);
-    return newGoal;
+  const createGoal = async (newGoalData) => {
+    try {
+      const created = await goalApi.createGoal(newGoalData);
+      setGoals((prev) => [created, ...prev]);
+      return created;
+    } catch (err) {
+      console.error('[GoalContext createGoal Error]:', err.message);
+      throw err;
+    }
   };
 
-  const updateGoal = (updatedGoal) => {
-    setGoals((prev) => prev.map((g) => (g.id === updatedGoal.id ? updatedGoal : g)));
+  const updateGoal = async (updatedGoal) => {
+    try {
+      const goalId = updatedGoal.id || updatedGoal._id;
+      const updated = await goalApi.updateGoal(goalId, updatedGoal);
+      setGoals((prev) => prev.map((g) => ((g.id || g._id) === goalId ? updated : g)));
+      return updated;
+    } catch (err) {
+      console.error('[GoalContext updateGoal Error]:', err.message);
+      throw err;
+    }
   };
 
-  const deleteGoal = (goalId) => {
-    setGoals((prev) => prev.filter((g) => g.id !== goalId));
+  const deleteGoal = async (goalId) => {
+    try {
+      await goalApi.deleteGoal(goalId);
+      setGoals((prev) => prev.filter((g) => (g.id || g._id) !== goalId));
+    } catch (err) {
+      console.error('[GoalContext deleteGoal Error]:', err.message);
+      throw err;
+    }
   };
 
   return (
     <GoalContext.Provider
       value={{
         goals,
+        goalsLoading,
+        goalsError,
+        fetchGoals,
         createGoal,
         updateGoal,
         deleteGoal,

@@ -1,29 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { Send, Sparkles, ListFilter, Target, TrendingUp, Lightbulb, MessageSquare } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 import ChatMessage from '../components/ChatMessage';
 import AIQuickAction from '../components/AIQuickAction';
 import AITypingIndicator from '../components/AITypingIndicator';
-
-const initialMessages = [
-  {
-    id: 1,
-    sender: 'ai',
-    text: "Hi Indrasena! I'm your FlowMind AI assistant. I can help you prioritize tasks, track progress, and improve your productivity. What would you like to work on today?",
-    timestamp: '10:00 AM',
-  },
-  {
-    id: 2,
-    sender: 'user',
-    text: 'Help me prioritize my tasks for today.',
-    timestamp: '10:01 AM',
-  },
-  {
-    id: 3,
-    sender: 'ai',
-    text: "Based on your current tasks, I recommend starting with 'Finalize Q3 Product Roadmap' because it is high priority and due at 2:00 PM. Then focus on 'Prepare Sprint Demo Slides' and 'Review Frontend Component Architecture'.",
-    timestamp: '10:01 AM',
-  },
-];
 
 const quickActions = [
   {
@@ -63,10 +43,47 @@ const suggestedPrompts = [
 ];
 
 export default function AIAssistant() {
-  const [messages, setMessages] = useState(initialMessages);
+  const { user } = useAuth();
+  const [messages, setMessages] = useState(() => [
+    {
+      id: 1,
+      sender: 'ai',
+      text: `Hi ${user?.name || 'there'}! I'm your FlowMind AI assistant. I can help you prioritize tasks, track progress, and improve your productivity. What would you like to work on today?`,
+      timestamp: '10:00 AM',
+    },
+    {
+      id: 2,
+      sender: 'user',
+      text: 'Help me prioritize my tasks for today.',
+      timestamp: '10:01 AM',
+    },
+    {
+      id: 3,
+      sender: 'ai',
+      text: "Based on your current tasks, I recommend starting with 'Finalize Q3 Product Roadmap' because it is high priority and due at 2:00 PM. Then focus on 'Prepare Sprint Demo Slides' and 'Review Frontend Component Architecture'.",
+      timestamp: '10:01 AM',
+    },
+  ]);
+
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const chatBottomRef = useRef(null);
+
+  // Sync initial message greeting when authenticated user changes
+  useEffect(() => {
+    if (user?.name) {
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === 1
+            ? {
+                ...msg,
+                text: `Hi ${user.name}! I'm your FlowMind AI assistant. I can help you prioritize tasks, track progress, and improve your productivity. What would you like to work on today?`,
+              }
+            : msg
+        )
+      );
+    }
+  }, [user]);
 
   // Auto-scroll to bottom whenever messages or typing state changes
   useEffect(() => {

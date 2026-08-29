@@ -9,7 +9,7 @@ import ConfirmDeleteModal from '../components/ConfirmDeleteModal';
 import SuccessToast from '../components/SuccessToast';
 
 export default function Goals() {
-  const { goals, createGoal, updateGoal, deleteGoal } = useGoals();
+  const { goals, goalsLoading, goalsError, createGoal, updateGoal, deleteGoal } = useGoals();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [sortBy, setSortBy] = useState('progress');
@@ -48,23 +48,37 @@ export default function Goals() {
   }, [goals, searchTerm, statusFilter, sortBy]);
 
   // Create Goal
-  const handleCreateGoal = (newGoalData) => {
-    createGoal(newGoalData);
-    setToastMessage('Goal created successfully!');
+  const handleCreateGoal = async (newGoalData) => {
+    try {
+      await createGoal(newGoalData);
+      setToastMessage('Goal created successfully!');
+    } catch (err) {
+      alert('Error creating goal: ' + err.message);
+    }
   };
 
   // Save Edited Goal
-  const handleSaveGoal = (updatedGoal) => {
-    updateGoal(updatedGoal);
-    setToastMessage('Goal updated successfully!');
+  const handleSaveGoal = async (updatedGoal) => {
+    try {
+      await updateGoal(updatedGoal);
+      setToastMessage('Goal updated successfully!');
+      setEditingGoal(null);
+    } catch (err) {
+      alert('Error updating goal: ' + err.message);
+    }
   };
 
   // Confirm Delete Goal
-  const handleConfirmDeleteGoal = () => {
+  const handleConfirmDeleteGoal = async () => {
     if (!deletingGoal) return;
-    deleteGoal(deletingGoal.id);
-    setToastMessage('Goal deleted successfully!');
-    setDeletingGoal(null);
+    const goalId = deletingGoal.id || deletingGoal._id;
+    try {
+      await deleteGoal(goalId);
+      setToastMessage('Goal deleted successfully!');
+      setDeletingGoal(null);
+    } catch (err) {
+      alert('Error deleting goal: ' + err.message);
+    }
   };
 
   return (
@@ -72,6 +86,13 @@ export default function Goals() {
       {/* Toast Notification */}
       {toastMessage && (
         <SuccessToast message={toastMessage} onClose={() => setToastMessage('')} />
+      )}
+
+      {/* Error Alert Banner */}
+      {goalsError && (
+        <div className="bg-amber-500/10 border border-amber-500/20 text-amber-400 px-4 py-3 rounded-xl text-sm flex items-center justify-between">
+          <span>⚠️ {goalsError}</span>
+        </div>
       )}
 
       {/* Create Goal Modal */}
@@ -109,7 +130,7 @@ export default function Goals() {
         <button
           type="button"
           onClick={() => setIsCreateModalOpen(true)}
-          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold rounded-lg shadow-md transition-all shrink-0"
+          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold rounded-lg shadow-md transition-all shrink-0 cursor-pointer"
         >
           <Plus className="w-4 h-4" />
           <span>Create Goal</span>
@@ -196,7 +217,11 @@ export default function Goals() {
       </div>
 
       {/* 4. Responsive Goals Grid */}
-      {filteredGoals.length === 0 ? (
+      {goalsLoading ? (
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-8 text-center text-slate-400 text-sm">
+          Loading goals...
+        </div>
+      ) : filteredGoals.length === 0 ? (
         <div className="bg-slate-900 border border-slate-800 rounded-xl p-8 text-center text-slate-400 text-sm">
           No goals match your search or filter criteria.
         </div>
@@ -204,7 +229,7 @@ export default function Goals() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {filteredGoals.map((goal) => (
             <GoalProgressCard
-              key={goal.id}
+              key={goal.id || goal._id}
               goal={goal}
               onEdit={(g) => setEditingGoal(g)}
               onDelete={(g) => setDeletingGoal(g)}

@@ -1,8 +1,29 @@
 import { Router } from 'express';
-import { getTasksStub } from '../controllers/taskController.js';
+import {
+  getTasks,
+  getTaskById,
+  createTask,
+  updateTask,
+  deleteTask,
+} from '../controllers/taskController.js';
+import {
+  validateCreateTask,
+  validateUpdateTask,
+} from '../middleware/taskValidation.js';
+import { protect } from '../middleware/authMiddleware.js';
 
 const router = Router();
 
-router.get('/', getTasksStub);
+// Protect all task routes
+router.use(protect);
+
+router.route('/')
+  .get(getTasks)
+  .post(validateCreateTask, createTask);
+
+router.route('/:id')
+  .get(getTaskById)
+  .put(validateUpdateTask, updateTask)
+  .delete(deleteTask);
 
 export default router;
