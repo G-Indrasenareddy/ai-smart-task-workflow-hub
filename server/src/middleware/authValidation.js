@@ -86,3 +86,21 @@ export const validatePasswordChange = (req, res, next) => {
 
   next();
 };
+
+export const validateNotificationPreferences = (req, res, next) => {
+  const { taskDueReminders, overdueTaskAlerts, goalProgressUpdates, weeklyProductivitySummary } = req.body;
+
+  if (
+    (taskDueReminders !== undefined && typeof taskDueReminders !== 'boolean') ||
+    (overdueTaskAlerts !== undefined && typeof overdueTaskAlerts !== 'boolean') ||
+    (goalProgressUpdates !== undefined && typeof goalProgressUpdates !== 'boolean') ||
+    (weeklyProductivitySummary !== undefined && typeof weeklyProductivitySummary !== 'boolean')
+  ) {
+    return res.status(400).json({
+      success: false,
+      message: 'Notification preferences must be boolean values',
+    });
+  }
+
+  next();
+};

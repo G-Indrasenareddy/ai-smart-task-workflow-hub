@@ -13,31 +13,34 @@ import ProtectedRoute from './components/ProtectedRoute';
 import { AuthProvider } from './context/AuthContext';
 import { GoalProvider } from './context/GoalContext';
 import { TaskProvider } from './context/TaskContext';
+import { NotificationProvider } from './context/NotificationContext';
 
 export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <TaskProvider>
-          <GoalProvider>
-            <Routes>
-              {/* Public Auth Routes */}
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
+        <NotificationProvider>
+          <TaskProvider>
+            <GoalProvider>
+              <Routes>
+                {/* Public Auth Routes */}
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
 
-              {/* Protected Workspace Routes */}
-              <Route element={<ProtectedRoute />}>
-                <Route path="/" element={<Layout />}>
-                  <Route index element={<Dashboard />} />
-                  <Route path="goals" element={<Goals />} />
-                  <Route path="tasks" element={<Tasks />} />
-                  <Route path="ai-assistant" element={<AIAssistant />} />
-                  <Route path="settings" element={<Settings />} />
+                {/* Protected Workspace Routes */}
+                <Route element={<ProtectedRoute />}>
+                  <Route path="/" element={<Layout />}>
+                    <Route index element={<Dashboard />} />
+                    <Route path="goals" element={<Goals />} />
+                    <Route path="tasks" element={<Tasks />} />
+                    <Route path="ai-assistant" element={<AIAssistant />} />
+                    <Route path="settings" element={<Settings />} />
+                  </Route>
                 </Route>
-              </Route>
-            </Routes>
-          </GoalProvider>
-        </TaskProvider>
+              </Routes>
+            </GoalProvider>
+          </TaskProvider>
+        </NotificationProvider>
       </AuthProvider>
     </BrowserRouter>
   );

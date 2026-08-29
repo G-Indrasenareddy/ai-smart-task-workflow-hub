@@ -85,6 +85,20 @@ export function AuthProvider({ children }) {
     }
   };
 
+  const updateNotificationPreferences = async (preferences) => {
+    setAuthError(null);
+    try {
+      const res = await authApi.updateNotificationPreferences(preferences);
+      if (res.success && res.user) {
+        setUser(res.user);
+        return res.user;
+      }
+    } catch (err) {
+      setAuthError(err.message);
+      throw err;
+    }
+  };
+
   const changePassword = async (currentPassword, newPassword) => {
     setAuthError(null);
     try {
@@ -118,6 +132,7 @@ export function AuthProvider({ children }) {
         login,
         register,
         updateProfile,
+        updateNotificationPreferences,
         changePassword,
         logout,
       }}

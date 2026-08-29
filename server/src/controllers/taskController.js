@@ -2,7 +2,7 @@ import { taskService } from '../services/taskService.js';
 
 export const getTasks = async (req, res, next) => {
   try {
-    const tasks = await taskService.getAllTasks(req.user.id);
+    const tasks = await taskService.getAllTasks(req.user.id, req.query);
     res.status(200).json({
       success: true,
       count: tasks.length,
@@ -40,6 +40,12 @@ export const createTask = async (req, res, next) => {
       data: task,
     });
   } catch (error) {
+    if (error.message.includes('Selected goal does not exist')) {
+      return res.status(400).json({
+        success: false,
+        message: error.message,
+      });
+    }
     next(error);
   }
 };
@@ -59,6 +65,12 @@ export const updateTask = async (req, res, next) => {
       data: task,
     });
   } catch (error) {
+    if (error.message.includes('Selected goal does not exist')) {
+      return res.status(400).json({
+        success: false,
+        message: error.message,
+      });
+    }
     next(error);
   }
 };

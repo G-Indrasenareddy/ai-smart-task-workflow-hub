@@ -1,12 +1,15 @@
 import { useState, useEffect } from 'react';
 import { X, CheckSquare } from 'lucide-react';
+import { useGoals } from '../context/GoalContext';
 
 export default function CreateTaskModal({ isOpen, onClose, onCreateTask }) {
+  const { goals } = useGoals();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [status, setStatus] = useState('To Do');
   const [priority, setPriority] = useState('Medium');
   const [dueDate, setDueDate] = useState('');
+  const [selectedGoal, setSelectedGoal] = useState('');
   const [error, setError] = useState('');
 
   // Escape key handling
@@ -35,6 +38,7 @@ export default function CreateTaskModal({ isOpen, onClose, onCreateTask }) {
       status,
       priority,
       dueDate: dueDate || 'Today',
+      goal: selectedGoal || null,
     });
 
     // Reset fields & close
@@ -43,6 +47,7 @@ export default function CreateTaskModal({ isOpen, onClose, onCreateTask }) {
     setStatus('To Do');
     setPriority('Medium');
     setDueDate('');
+    setSelectedGoal('');
     setError('');
     onClose();
   };
@@ -70,7 +75,7 @@ export default function CreateTaskModal({ isOpen, onClose, onCreateTask }) {
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-lg transition-colors"
+            className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -143,17 +148,37 @@ export default function CreateTaskModal({ isOpen, onClose, onCreateTask }) {
             </div>
           </div>
 
-          {/* Due Date */}
-          <div>
-            <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider block mb-1.5">
-              Due Date
-            </label>
-            <input
-              type="date"
-              value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3.5 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500/50 cursor-pointer"
-            />
+          {/* Associated Goal & Due Date Row */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider block mb-1.5">
+                Associated Goal <span className="text-slate-500 font-normal">(Optional)</span>
+              </label>
+              <select
+                value={selectedGoal}
+                onChange={(e) => setSelectedGoal(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3.5 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-indigo-500/50 cursor-pointer"
+              >
+                <option value="" className="bg-slate-900">-- None --</option>
+                {goals.map((g) => (
+                  <option key={g.id || g._id} value={g.id || g._id} className="bg-slate-900">
+                    {g.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider block mb-1.5">
+                Due Date
+              </label>
+              <input
+                type="date"
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3.5 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500/50 cursor-pointer"
+              />
+            </div>
           </div>
 
           {/* Actions */}
@@ -161,13 +186,13 @@ export default function CreateTaskModal({ isOpen, onClose, onCreateTask }) {
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm font-medium transition-colors"
+              className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm font-medium transition-colors cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold shadow-md transition-colors"
+              className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold shadow-md transition-colors cursor-pointer"
             >
               Create Task
             </button>

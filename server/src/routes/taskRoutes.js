@@ -9,6 +9,7 @@ import {
 import {
   validateCreateTask,
   validateUpdateTask,
+  validateTaskQueryParams,
 } from '../middleware/taskValidation.js';
 import { protect } from '../middleware/authMiddleware.js';
 
@@ -18,7 +19,7 @@ const router = Router();
 router.use(protect);
 
 router.route('/')
-  .get(getTasks)
+  .get(validateTaskQueryParams, getTasks)
   .post(validateCreateTask, createTask);
 
 router.route('/:id')

@@ -1,4 +1,6 @@
 const VALID_GOAL_STATUSES = ['Active', 'Completed', 'At Risk'];
+const VALID_SORT_BY = ['targetDate', 'progress', 'createdAt', 'title'];
+const VALID_SORT_ORDER = ['asc', 'desc'];
 
 export const validateCreateGoal = (req, res, next) => {
   const { title, description, progress, status, targetDate, tasksCount } = req.body;
@@ -90,6 +92,40 @@ export const validateUpdateGoal = (req, res, next) => {
     return res.status(400).json({
       success: false,
       message: 'Goal tasks count must be a non-negative number',
+    });
+  }
+
+  next();
+};
+
+export const validateGoalQueryParams = (req, res, next) => {
+  const { status, sortBy, sortOrder, search } = req.query;
+
+  if (status && !VALID_GOAL_STATUSES.includes(status)) {
+    return res.status(400).json({
+      success: false,
+      message: `Invalid status query parameter. Allowed: ${VALID_GOAL_STATUSES.join(', ')}`,
+    });
+  }
+
+  if (sortBy && !VALID_SORT_BY.includes(sortBy)) {
+    return res.status(400).json({
+      success: false,
+      message: `Invalid sortBy query parameter. Allowed: ${VALID_SORT_BY.join(', ')}`,
+    });
+  }
+
+  if (sortOrder && !VALID_SORT_ORDER.includes(sortOrder.toLowerCase())) {
+    return res.status(400).json({
+      success: false,
+      message: `Invalid sortOrder query parameter. Allowed: ${VALID_SORT_ORDER.join(', ')}`,
+    });
+  }
+
+  if (search && (typeof search !== 'string' || search.length > 100)) {
+    return res.status(400).json({
+      success: false,
+      message: 'Search query parameter exceeds maximum length of 100 characters',
     });
   }
 

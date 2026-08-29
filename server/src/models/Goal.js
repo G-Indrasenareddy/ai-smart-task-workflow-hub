@@ -5,6 +5,7 @@ const goalSchema = new mongoose.Schema(
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
+      required: true,
       index: true,
     },
     title: {
@@ -36,6 +37,10 @@ const goalSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    completedAt: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: true,
@@ -50,6 +55,10 @@ const goalSchema = new mongoose.Schema(
     toObject: { virtuals: true },
   }
 );
+
+// Compound indexes for user-scoped filtering & sorting optimization
+goalSchema.index({ user: 1, status: 1 });
+goalSchema.index({ user: 1, createdAt: -1 });
 
 const Goal = mongoose.model('Goal', goalSchema);
 

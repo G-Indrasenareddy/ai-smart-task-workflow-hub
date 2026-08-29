@@ -9,6 +9,7 @@ import {
 import {
   validateCreateGoal,
   validateUpdateGoal,
+  validateGoalQueryParams,
 } from '../middleware/goalValidation.js';
 import { protect } from '../middleware/authMiddleware.js';
 
@@ -18,7 +19,7 @@ const router = Router();
 router.use(protect);
 
 router.route('/')
-  .get(getGoals)
+  .get(validateGoalQueryParams, getGoals)
   .post(validateCreateGoal, createGoal);
 
 router.route('/:id')

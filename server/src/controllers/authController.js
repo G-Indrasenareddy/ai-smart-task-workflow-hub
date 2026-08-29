@@ -8,6 +8,18 @@ const generateToken = (id) => {
   });
 };
 
+const formatUserResponse = (user) => ({
+  id: user.id || user._id.toString(),
+  name: user.name,
+  email: user.email,
+  notificationPreferences: user.notificationPreferences || {
+    taskDueReminders: true,
+    overdueTaskAlerts: true,
+    goalProgressUpdates: true,
+    weeklyProductivitySummary: false,
+  },
+});
+
 export const register = async (req, res, next) => {
   try {
     const { name, email, password } = req.body;
@@ -32,11 +44,7 @@ export const register = async (req, res, next) => {
       success: true,
       message: 'User registered successfully',
       token,
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-      },
+      user: formatUserResponse(user),
     });
   } catch (error) {
     next(error);
@@ -69,11 +77,7 @@ export const login = async (req, res, next) => {
       success: true,
       message: 'Logged in successfully',
       token,
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-      },
+      user: formatUserResponse(user),
     });
   } catch (error) {
     next(error);
@@ -84,11 +88,7 @@ export const getMe = async (req, res, next) => {
   try {
     res.status(200).json({
       success: true,
-      data: {
-        id: req.user.id,
-        name: req.user.name,
-        email: req.user.email,
-      },
+      data: formatUserResponse(req.user),
     });
   } catch (error) {
     next(error);
@@ -122,11 +122,42 @@ export const updateProfile = async (req, res, next) => {
     res.status(200).json({
       success: true,
       message: 'Profile updated successfully',
-      user: {
-        id: updatedUser.id,
-        name: updatedUser.name,
-        email: updatedUser.email,
-      },
+      user: formatUserResponse(updatedUser),
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateNotificationPreferences = async (req, res, next) => {
+  try {
+    const { taskDueReminders, overdueTaskAlerts, goalProgressUpdates, weeklyProductivitySummary } = req.body;
+
+    const currentPreferences = req.user.notificationPreferences || {
+      taskDueReminders: true,
+      overdueTaskAlerts: true,
+      goalProgressUpdates: true,
+      weeklyProductivitySummary: false,
+    };
+
+    const newPreferences = {
+      taskDueReminders: taskDueReminders !== undefined ? taskDueReminders : currentPreferences.taskDueReminders,
+      overdueTaskAlerts: overdueTaskAlerts !== undefined ? overdueTaskAlerts : currentPreferences.overdueTaskAlerts,
+      goalProgressUpdates: goalProgressUpdates !== undefined ? goalProgressUpdates : currentPreferences.goalProgressUpdates,
+      weeklyProductivitySummary:
+        weeklyProductivitySummary !== undefined ? weeklyProductivitySummary : currentPreferences.weeklyProductivitySummary,
+    };
+
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user.id,
+      { notificationPreferences: newPreferences },
+      { returnDocument: 'after', runValidators: true }
+    );
+
+    res.status(200).json({
+      success: true,
+      message: 'Notification preferences updated successfully',
+      user: formatUserResponse(updatedUser),
     });
   } catch (error) {
     next(error);

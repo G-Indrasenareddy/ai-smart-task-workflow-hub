@@ -2,11 +2,15 @@ import mongoose from 'mongoose';
 import app from './app.js';
 import { config, validateEnv } from './config/env.js';
 import { connectDB } from './config/db.js';
+import { startReminderScheduler, stopReminderScheduler } from './jobs/reminderScheduler.js';
 
 const startServer = async () => {
   try {
     validateEnv();
     await connectDB();
+
+    // Start background reminder scheduler
+    startReminderScheduler();
 
     const server = app.listen(config.port, () => {
       console.log(`=================================`);
@@ -20,6 +24,7 @@ const startServer = async () => {
 
     const handleShutdown = async (signal) => {
       console.log(`\nReceived ${signal}. Shutting down server gracefully...`);
+      stopReminderScheduler();
       server.close(async () => {
         console.log('HTTP server closed.');
         try {

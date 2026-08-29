@@ -21,6 +21,12 @@ const userSchema = new mongoose.Schema(
       minlength: [6, 'Password must be at least 6 characters'],
       select: false,
     },
+    notificationPreferences: {
+      taskDueReminders: { type: Boolean, default: true },
+      overdueTaskAlerts: { type: Boolean, default: true },
+      goalProgressUpdates: { type: Boolean, default: true },
+      weeklyProductivitySummary: { type: Boolean, default: false },
+    },
   },
   {
     timestamps: true,

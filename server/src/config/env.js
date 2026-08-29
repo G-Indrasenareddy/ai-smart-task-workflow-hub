@@ -10,6 +10,7 @@ export const config = {
   jwtSecret: process.env.JWT_SECRET || 'flowmind_ai_super_secret_jwt_private_key_9988776655',
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
   geminiApiKey: process.env.GEMINI_API_KEY || '',
+  geminiModel: process.env.GEMINI_MODEL || 'gemini-3.6-flash',
 };
 
 export const validateEnv = () => {
@@ -19,6 +20,17 @@ export const validateEnv = () => {
 
   if (missing.length > 0) {
     console.warn(`[Config Warning] Missing environment variables: ${missing.join(', ')}`);
+  }
+
+  const isGeminiConfigured =
+    config.geminiApiKey &&
+    config.geminiApiKey.trim() !== '' &&
+    config.geminiApiKey !== 'your_gemini_api_key_here';
+
+  if (isGeminiConfigured) {
+    console.log(`Gemini configuration: configured (Model: ${config.geminiModel})`);
+  } else {
+    console.log('Gemini configuration: not configured');
   }
 
   if (config.nodeEnv === 'production' && config.jwtSecret.includes('super_secret_jwt')) {

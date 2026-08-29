@@ -28,6 +28,13 @@ export const authApi = {
     });
   },
 
+  async updateNotificationPreferences(preferences) {
+    return await apiClient('/auth/notification-preferences', {
+      method: 'PUT',
+      body: preferences,
+    });
+  },
+
   async changePassword(currentPassword, newPassword) {
     return await apiClient('/auth/password', {
       method: 'PUT',

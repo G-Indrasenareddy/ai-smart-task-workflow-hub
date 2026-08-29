@@ -4,6 +4,7 @@ import authRoutes from './authRoutes.js';
 import taskRoutes from './taskRoutes.js';
 import goalRoutes from './goalRoutes.js';
 import aiRoutes from './aiRoutes.js';
+import notificationRoutes from './notificationRoutes.js';
 
 const router = Router();
 
@@ -12,5 +13,6 @@ router.use('/auth', authRoutes);
 router.use('/tasks', taskRoutes);
 router.use('/goals', goalRoutes);
 router.use('/ai', aiRoutes);
+router.use('/notifications', notificationRoutes);
 
 export default router;

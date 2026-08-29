@@ -1,3 +1,5 @@
+import mongoose from 'mongoose';
+
 export const validateChatInput = (req, res, next) => {
   const { message, history } = req.body;
 
@@ -22,10 +24,10 @@ export const validateChatInput = (req, res, next) => {
     });
   }
 
-  if (Array.isArray(history) && history.length > 20) {
+  if (Array.isArray(history) && history.length > 50) {
     return res.status(400).json({
       success: false,
-      message: 'History exceeds maximum limit of 20 messages',
+      message: 'History exceeds maximum limit of 50 messages',
     });
   }
 
@@ -56,5 +58,32 @@ export const validateSuggestSubtasksInput = (req, res, next) => {
     });
   }
 
+  next();
+};
+
+export const validateConversationId = (req, res, next) => {
+  if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid conversation ID format',
+    });
+  }
+  next();
+};
+
+export const validateConversationTitle = (req, res, next) => {
+  const { title } = req.body;
+  if (title !== undefined && (typeof title !== 'string' || title.trim() === '')) {
+    return res.status(400).json({
+      success: false,
+      message: 'Conversation title must be a non-empty string',
+    });
+  }
+  if (title && title.length > 100) {
+    return res.status(400).json({
+      success: false,
+      message: 'Conversation title exceeds maximum length of 100 characters',
+    });
+  }
   next();
 };

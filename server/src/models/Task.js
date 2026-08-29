@@ -5,6 +5,13 @@ const taskSchema = new mongoose.Schema(
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
+      required: true,
+      index: true,
+    },
+    goal: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Goal',
+      default: null,
       index: true,
     },
     title: {
@@ -31,6 +38,10 @@ const taskSchema = new mongoose.Schema(
       type: String,
       default: 'Today',
     },
+    completedAt: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: true,
@@ -38,6 +49,7 @@ const taskSchema = new mongoose.Schema(
       virtuals: true,
       transform: (doc, ret) => {
         ret.id = ret._id.toString();
+        if (ret.goal) ret.goal = ret.goal.toString();
         delete ret.__v;
         return ret;
       },
@@ -45,6 +57,12 @@ const taskSchema = new mongoose.Schema(
     toObject: { virtuals: true },
   }
 );
+
+// Compound indexes for user-scoped filtering & sorting optimization
+taskSchema.index({ user: 1, status: 1 });
+taskSchema.index({ user: 1, priority: 1 });
+taskSchema.index({ user: 1, goal: 1 });
+taskSchema.index({ user: 1, createdAt: -1 });
 
 const Task = mongoose.model('Task', taskSchema);
 

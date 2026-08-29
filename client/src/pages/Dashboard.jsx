@@ -10,6 +10,59 @@ import AIInsightCard from '../components/AIInsightCard';
 import CreateTaskModal from '../components/CreateTaskModal';
 import SuccessToast from '../components/SuccessToast';
 
+function getLocalDateString(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function isTaskOverdue(task) {
+  if (!task || task.status === 'Completed') return false;
+  if (!task.dueDate) return false;
+  const lower = task.dueDate.trim().toLowerCase();
+  if (lower === 'today' || lower === 'tomorrow') return false;
+
+  const todayStr = getLocalDateString(new Date());
+
+  // ISO date YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}$/.test(task.dueDate.trim())) {
+    return task.dueDate.trim() < todayStr;
+  }
+
+  // Handle standard date strings like "September 5, 2026"
+  const dateObj = new Date(task.dueDate);
+  if (!isNaN(dateObj.getTime())) {
+    const taskDateStr = getLocalDateString(dateObj);
+    return taskDateStr < todayStr;
+  }
+
+  return false;
+}
+
+function isTaskDueToday(task) {
+  if (!task) return false;
+  if (!task.dueDate) return false;
+  const lower = task.dueDate.trim().toLowerCase();
+  if (lower === 'today') return true;
+
+  const todayStr = getLocalDateString(new Date());
+
+  // ISO date YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}$/.test(task.dueDate.trim())) {
+    return task.dueDate.trim() === todayStr;
+  }
+
+  // Handle standard date strings
+  const dateObj = new Date(task.dueDate);
+  if (!isNaN(dateObj.getTime())) {
+    const taskDateStr = getLocalDateString(dateObj);
+    return taskDateStr === todayStr;
+  }
+
+  return false;
+}
+
 export default function Dashboard() {
   const { user } = useAuth();
   const { tasks, createTask } = useTasks();
@@ -17,58 +70,62 @@ export default function Dashboard() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
 
-  // Dynamically compute Stats Cards from shared TaskContext state
+  // Dynamically compute Stat Cards from shared TaskContext state with clear labels & correct calculations
   const statsData = useMemo(() => {
     const total = tasks.length;
     const completed = tasks.filter((t) => t.status === 'Completed').length;
     const inProgress = tasks.filter((t) => t.status === 'In Progress').length;
-    const overdue = tasks.filter((t) => t.status === 'To Do').length;
+    const overdueCount = tasks.filter(isTaskOverdue).length;
 
     const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
 
     return [
       {
         id: 'total',
-        title: 'Total Tasks',
+        label: 'Total Tasks',
         value: total,
-        subtitle: `${completed} completed`,
+        trend: `${completed} of ${total} completed (${completionRate}%)`,
+        trendType: 'positive',
         icon: ListTodo,
-        badgeText: `${completionRate}% Done`,
-        badgeColor: 'indigo',
+        iconBgColor: 'bg-indigo-600/20',
+        iconTextColor: 'text-indigo-400',
       },
       {
         id: 'completed',
-        title: 'Completed Tasks',
+        label: 'Completed Tasks',
         value: completed,
-        subtitle: 'Tasks completed',
+        trend: `${completionRate}% task completion rate`,
+        trendType: 'positive',
         icon: CheckCircle2,
-        badgeText: 'Good Pace',
-        badgeColor: 'emerald',
+        iconBgColor: 'bg-emerald-500/20',
+        iconTextColor: 'text-emerald-400',
       },
       {
         id: 'inProgress',
-        title: 'In Progress',
+        label: 'In Progress',
         value: inProgress,
-        subtitle: 'Active tasks',
+        trend: `${inProgress} active task(s) in flight`,
+        trendType: 'warning',
         icon: Clock,
-        badgeText: 'Active',
-        badgeColor: 'amber',
+        iconBgColor: 'bg-amber-500/20',
+        iconTextColor: 'text-amber-400',
       },
       {
         id: 'overdue',
-        title: 'Pending To Do',
-        value: overdue,
-        subtitle: 'Requires focus',
+        label: 'Overdue Tasks',
+        value: overdueCount,
+        trend: overdueCount > 0 ? `${overdueCount} task(s) past due date` : 'No overdue tasks',
+        trendType: overdueCount > 0 ? 'negative' : 'positive',
         icon: AlertCircle,
-        badgeText: overdue > 0 ? 'Pending' : 'Clear',
-        badgeColor: overdue > 0 ? 'rose' : 'emerald',
+        iconBgColor: overdueCount > 0 ? 'bg-rose-500/20' : 'bg-slate-800',
+        iconTextColor: overdueCount > 0 ? 'text-rose-400' : 'text-slate-400',
       },
     ];
   }, [tasks]);
 
-  // Dynamically derive recent tasks (top 4)
-  const recentTasks = useMemo(() => {
-    return tasks.slice(0, 4);
+  // Dynamically filter tasks actually due today
+  const todaysTasks = useMemo(() => {
+    return tasks.filter(isTaskDueToday);
   }, [tasks]);
 
   // Dynamically derive active goals (top 3)
@@ -121,7 +178,7 @@ export default function Dashboard() {
       {/* 2. Statistics Section */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {statsData.map((stat) => (
-          <StatCard key={stat.label} {...stat} />
+          <StatCard key={stat.id} {...stat} />
         ))}
       </div>
 
@@ -137,20 +194,26 @@ export default function Dashboard() {
               </h2>
             </div>
             <span className="text-xs text-slate-400 font-medium bg-slate-800 px-2.5 py-1 rounded-full">
-              {tasks.length} Tasks
+              {todaysTasks.length} Due Today
             </span>
           </div>
 
           <div className="space-y-2.5">
-            {tasks.slice(0, 4).map((task) => (
-              <TaskItem
-                key={task.id || task._id}
-                title={task.title}
-                priority={task.priority}
-                dueTime={task.dueDate}
-                isCompleted={task.status === 'Completed'}
-              />
-            ))}
+            {todaysTasks.length === 0 ? (
+              <div className="p-6 text-center text-slate-400 text-sm">
+                No tasks due today. You're all caught up for today!
+              </div>
+            ) : (
+              todaysTasks.map((task) => (
+                <TaskItem
+                  key={task.id || task._id}
+                  title={task.title}
+                  priority={task.priority}
+                  dueTime={task.dueDate}
+                  isCompleted={task.status === 'Completed'}
+                />
+              ))
+            )}
           </div>
         </div>
 
@@ -166,14 +229,26 @@ export default function Dashboard() {
           </div>
 
           <div className="space-y-3">
-            {goals.slice(0, 3).map((goal) => (
-              <GoalProgress
-                key={goal.id || goal._id}
-                title={goal.title}
-                percentage={goal.progress}
-                color={goal.status === 'Completed' ? 'bg-emerald-500' : goal.status === 'At Risk' ? 'bg-amber-500' : 'bg-indigo-500'}
-              />
-            ))}
+            {goals.length === 0 ? (
+              <div className="p-6 text-center text-slate-400 text-sm">
+                No active goals created yet.
+              </div>
+            ) : (
+              activeGoals.map((goal) => (
+                <GoalProgress
+                  key={goal.id || goal._id}
+                  title={goal.title}
+                  percentage={goal.progress}
+                  color={
+                    goal.status === 'Completed'
+                      ? 'bg-emerald-500'
+                      : goal.status === 'At Risk'
+                      ? 'bg-amber-500'
+                      : 'bg-indigo-500'
+                  }
+                />
+              ))
+            )}
           </div>
         </div>
       </div>

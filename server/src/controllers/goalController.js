@@ -2,7 +2,7 @@ import { goalService } from '../services/goalService.js';
 
 export const getGoals = async (req, res, next) => {
   try {
-    const goals = await goalService.getAllGoals(req.user.id);
+    const goals = await goalService.getAllGoals(req.user.id, req.query);
     res.status(200).json({
       success: true,
       count: goals.length,

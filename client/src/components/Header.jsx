@@ -1,6 +1,7 @@
 import { useLocation } from 'react-router-dom';
-import { Bell, User, LogOut } from 'lucide-react';
+import { User, LogOut } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import NotificationDropdown from './NotificationDropdown';
 
 const routeTitles = {
   '/': 'Dashboard',
@@ -22,14 +23,8 @@ export default function Header() {
 
       {/* Actions */}
       <div className="flex items-center gap-4">
-        <button
-          type="button"
-          aria-label="Notifications"
-          className="p-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-lg transition-colors relative"
-        >
-          <Bell className="w-5 h-5" />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-indigo-500 rounded-full" />
-        </button>
+        {/* Notification Bell Dropdown */}
+        <NotificationDropdown />
 
         <div className="h-5 w-px bg-slate-800" />
 

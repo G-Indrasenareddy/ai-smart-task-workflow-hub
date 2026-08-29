@@ -6,7 +6,7 @@ import SettingsToggle from '../components/SettingsToggle';
 import SettingsSelect from '../components/SettingsSelect';
 
 export default function Settings() {
-  const { user, updateProfile, changePassword } = useAuth();
+  const { user, updateProfile, updateNotificationPreferences, changePassword } = useAuth();
 
   // Profile Form State
   const [profile, setProfile] = useState({
@@ -25,12 +25,27 @@ export default function Settings() {
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [passwordMessage, setPasswordMessage] = useState({ type: '', text: '' });
 
-  // Sync profile when authenticated user changes
+  // Notification Preferences State
+  const [notifications, setNotifications] = useState({
+    taskDueReminders: true,
+    overdueTaskAlerts: true,
+    goalProgressUpdates: true,
+    weeklySummary: false,
+  });
+
+  // Sync profile & notification preferences when authenticated user loads
   useEffect(() => {
     if (user) {
       setProfile({
         fullName: user.name || '',
         email: user.email || '',
+      });
+      const prefs = user.notificationPreferences || {};
+      setNotifications({
+        taskDueReminders: prefs.taskDueReminders ?? true,
+        overdueTaskAlerts: prefs.overdueTaskAlerts ?? true,
+        goalProgressUpdates: prefs.goalProgressUpdates ?? true,
+        weeklySummary: prefs.weeklyProductivitySummary ?? false,
       });
     }
   }, [user]);
@@ -39,13 +54,6 @@ export default function Settings() {
     defaultPriority: 'Medium',
     defaultView: 'List',
     planningTime: 'Morning',
-  });
-
-  const [notifications, setNotifications] = useState({
-    taskDueReminders: true,
-    overdueAlerts: true,
-    goalUpdates: true,
-    weeklySummary: false,
   });
 
   const [aiPreferences, setAiPreferences] = useState({
@@ -78,6 +86,22 @@ export default function Settings() {
       setProfileMessage({ type: 'error', text: err.message || 'Failed to update profile.' });
     } finally {
       setIsUpdatingProfile(false);
+    }
+  };
+
+  const handleToggleNotification = async (key, val) => {
+    const updated = { ...notifications, [key]: val };
+    setNotifications(updated);
+
+    try {
+      await updateNotificationPreferences({
+        taskDueReminders: updated.taskDueReminders,
+        overdueTaskAlerts: updated.overdueTaskAlerts,
+        goalProgressUpdates: updated.goalProgressUpdates,
+        weeklyProductivitySummary: updated.weeklySummary,
+      });
+    } catch (err) {
+      console.error('[Settings Notification Prefs Error]:', err.message);
     }
   };
 
@@ -361,30 +385,30 @@ export default function Settings() {
           >
             <SettingsToggle
               label="Task Due Reminders"
-              description="Receive alerts for upcoming task deadlines."
+              description="Receive in-app alerts for upcoming task deadlines."
               enabled={notifications.taskDueReminders}
-              onChange={(val) => setNotifications({ ...notifications, taskDueReminders: val })}
+              onChange={(val) => handleToggleNotification('taskDueReminders', val)}
             />
 
             <SettingsToggle
               label="Overdue Task Alerts"
-              description="Get urgent notifications for overdue tasks."
-              enabled={notifications.overdueAlerts}
-              onChange={(val) => setNotifications({ ...notifications, overdueAlerts: val })}
+              description="Get urgent in-app notifications for overdue tasks."
+              enabled={notifications.overdueTaskAlerts}
+              onChange={(val) => handleToggleNotification('overdueTaskAlerts', val)}
             />
 
             <SettingsToggle
               label="Goal Progress Updates"
               description="Track milestone achievements across active goals."
-              enabled={notifications.goalUpdates}
-              onChange={(val) => setNotifications({ ...notifications, goalUpdates: val })}
+              enabled={notifications.goalProgressUpdates}
+              onChange={(val) => handleToggleNotification('goalProgressUpdates', val)}
             />
 
             <SettingsToggle
               label="Weekly Productivity Summary"
-              description="Receive weekly email digest of completed tasks."
+              description="Receive weekly in-app digest of completed tasks."
               enabled={notifications.weeklySummary}
-              onChange={(val) => setNotifications({ ...notifications, weeklySummary: val })}
+              onChange={(val) => handleToggleNotification('weeklySummary', val)}
             />
           </SettingsSection>
 

@@ -38,6 +38,10 @@ export async function apiClient(endpoint, options = {}) {
     return data;
   } catch (error) {
     console.error(`[API Error] ${options.method || 'GET'} ${url}:`, error.message);
-    throw error;
+    const friendlyMessage =
+      error.message === 'Failed to fetch' || error.name === 'TypeError'
+        ? 'Unable to connect to FlowMind AI backend server. Please ensure the server is running.'
+        : error.message;
+    throw new Error(friendlyMessage);
   }
 }
