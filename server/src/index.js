@@ -1,24 +1,24 @@
-import express from 'express';
-import cors from 'cors';
-import dotenv from 'dotenv';
+import app from './app.js';
+import { config } from './config/env.js';
 
-dotenv.config();
+const server = app.listen(config.port, () => {
+  console.log(`=================================`);
+  console.log(` FlowMind AI Server Running`);
+  console.log(` Port:        ${config.port}`);
+  console.log(` Environment: ${config.nodeEnv}`);
+  console.log(` Client URL:  ${config.clientUrl}`);
+  console.log(` Health:      http://localhost:${config.port}/api/health`);
+  console.log(`=================================`);
+});
 
-const app = express();
-const PORT = process.env.PORT || 5000;
-
-app.use(cors());
-app.use(express.json());
-
-// Minimal Health Check Verification Endpoint
-app.get('/api/health', (req, res) => {
-  res.json({
-    status: 'ok',
-    message: 'AI-Assisted Smart Task & Workflow Hub Server is running.',
-    timestamp: new Date().toISOString()
+// Graceful shutdown
+const handleShutdown = (signal) => {
+  console.log(`\nReceived ${signal}. Shutting down server gracefully...`);
+  server.close(() => {
+    console.log('HTTP server closed.');
+    process.exit(0);
   });
-});
+};
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+process.on('SIGINT', () => handleShutdown('SIGINT'));
+process.on('SIGTERM', () => handleShutdown('SIGTERM'));
