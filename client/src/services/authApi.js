@@ -20,4 +20,18 @@ export const authApi = {
       method: 'GET',
     });
   },
+
+  async updateProfile(name, email) {
+    return await apiClient('/auth/profile', {
+      method: 'PUT',
+      body: { name, email },
+    });
+  },
+
+  async changePassword(currentPassword, newPassword) {
+    return await apiClient('/auth/password', {
+      method: 'PUT',
+      body: { currentPassword, newPassword },
+    });
+  },
 };

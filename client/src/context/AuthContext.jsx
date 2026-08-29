@@ -71,6 +71,35 @@ export function AuthProvider({ children }) {
     }
   };
 
+  const updateProfile = async (name, email) => {
+    setAuthError(null);
+    try {
+      const res = await authApi.updateProfile(name, email);
+      if (res.success && res.user) {
+        setUser(res.user);
+        return res.user;
+      }
+    } catch (err) {
+      setAuthError(err.message);
+      throw err;
+    }
+  };
+
+  const changePassword = async (currentPassword, newPassword) => {
+    setAuthError(null);
+    try {
+      const res = await authApi.changePassword(currentPassword, newPassword);
+      if (res.success && res.token) {
+        localStorage.setItem('flowmind_token', res.token);
+        setToken(res.token);
+      }
+      return res;
+    } catch (err) {
+      setAuthError(err.message);
+      throw err;
+    }
+  };
+
   const logout = () => {
     localStorage.removeItem('flowmind_token');
     setToken(null);
@@ -88,6 +117,8 @@ export function AuthProvider({ children }) {
         authError,
         login,
         register,
+        updateProfile,
+        changePassword,
         logout,
       }}
     >

@@ -46,3 +46,43 @@ export const validateLogin = (req, res, next) => {
 
   next();
 };
+
+export const validateProfileUpdate = (req, res, next) => {
+  const { name, email } = req.body;
+
+  if (!name || typeof name !== 'string' || name.trim() === '') {
+    return res.status(400).json({
+      success: false,
+      message: 'Name is required and must be a non-empty string',
+    });
+  }
+
+  if (!email || typeof email !== 'string' || !EMAIL_REGEX.test(email.trim())) {
+    return res.status(400).json({
+      success: false,
+      message: 'A valid email address is required',
+    });
+  }
+
+  next();
+};
+
+export const validatePasswordChange = (req, res, next) => {
+  const { currentPassword, newPassword } = req.body;
+
+  if (!currentPassword || typeof currentPassword !== 'string' || currentPassword.trim() === '') {
+    return res.status(400).json({
+      success: false,
+      message: 'Current password is required',
+    });
+  }
+
+  if (!newPassword || typeof newPassword !== 'string' || newPassword.length < 6) {
+    return res.status(400).json({
+      success: false,
+      message: 'New password is required and must be at least 6 characters',
+    });
+  }
+
+  next();
+};

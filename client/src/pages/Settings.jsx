@@ -1,18 +1,29 @@
 import { useState, useEffect } from 'react';
-import { Save, User, Sliders, Bell, Bot, Palette, CheckCircle2, Info } from 'lucide-react';
+import { Save, User, Sliders, Bell, Bot, Palette, CheckCircle2, Info, Lock, AlertCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import SettingsSection from '../components/SettingsSection';
 import SettingsToggle from '../components/SettingsToggle';
 import SettingsSelect from '../components/SettingsSelect';
 
 export default function Settings() {
-  const { user } = useAuth();
+  const { user, updateProfile, changePassword } = useAuth();
 
-  // Local state for all settings initialized with AuthContext user
+  // Profile Form State
   const [profile, setProfile] = useState({
     fullName: user?.name || '',
     email: user?.email || '',
   });
+  const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
+  const [profileMessage, setProfileMessage] = useState({ type: '', text: '' });
+
+  // Password Change Form State
+  const [passwords, setPasswords] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [passwordMessage, setPasswordMessage] = useState({ type: '', text: '' });
 
   // Sync profile when authenticated user changes
   useEffect(() => {
@@ -49,6 +60,59 @@ export default function Settings() {
 
   const [showSavedAlert, setShowSavedAlert] = useState(false);
 
+  const handleUpdateProfile = async (e) => {
+    e.preventDefault();
+    setProfileMessage({ type: '', text: '' });
+
+    if (!profile.fullName.trim() || !profile.email.trim()) {
+      setProfileMessage({ type: 'error', text: 'Name and email are required.' });
+      return;
+    }
+
+    setIsUpdatingProfile(true);
+    try {
+      await updateProfile(profile.fullName, profile.email);
+      setProfileMessage({ type: 'success', text: 'Profile updated successfully!' });
+      setTimeout(() => setProfileMessage({ type: '', text: '' }), 4000);
+    } catch (err) {
+      setProfileMessage({ type: 'error', text: err.message || 'Failed to update profile.' });
+    } finally {
+      setIsUpdatingProfile(false);
+    }
+  };
+
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+    setPasswordMessage({ type: '', text: '' });
+
+    if (!passwords.currentPassword) {
+      setPasswordMessage({ type: 'error', text: 'Please enter your current password.' });
+      return;
+    }
+
+    if (passwords.newPassword.length < 6) {
+      setPasswordMessage({ type: 'error', text: 'New password must be at least 6 characters.' });
+      return;
+    }
+
+    if (passwords.newPassword !== passwords.confirmPassword) {
+      setPasswordMessage({ type: 'error', text: 'New passwords do not match.' });
+      return;
+    }
+
+    setIsChangingPassword(true);
+    try {
+      await changePassword(passwords.currentPassword, passwords.newPassword);
+      setPasswordMessage({ type: 'success', text: 'Password updated successfully!' });
+      setPasswords({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      setTimeout(() => setPasswordMessage({ type: '', text: '' }), 4000);
+    } catch (err) {
+      setPasswordMessage({ type: 'error', text: err.message || 'Failed to change password.' });
+    } finally {
+      setIsChangingPassword(false);
+    }
+  };
+
   const handleSaveChanges = () => {
     setShowSavedAlert(true);
     setTimeout(() => {
@@ -77,7 +141,7 @@ export default function Settings() {
         <button
           type="button"
           onClick={handleSaveChanges}
-          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold rounded-lg shadow-md transition-all shrink-0"
+          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold rounded-lg shadow-md transition-all shrink-0 cursor-pointer"
         >
           <Save className="w-4 h-4" />
           <span>Save Changes</span>
@@ -112,13 +176,31 @@ export default function Settings() {
               </div>
             </div>
 
-            <div className="space-y-3">
+            {profileMessage.text && (
+              <div
+                className={`p-3 rounded-lg text-xs font-medium flex items-center gap-2 ${
+                  profileMessage.type === 'error'
+                    ? 'bg-rose-500/10 border border-rose-500/20 text-rose-400'
+                    : 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400'
+                }`}
+              >
+                {profileMessage.type === 'error' ? (
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                ) : (
+                  <CheckCircle2 className="w-4 h-4 shrink-0" />
+                )}
+                <span>{profileMessage.text}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleUpdateProfile} className="space-y-3">
               <div>
                 <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider block mb-1.5">
                   Full Name
                 </label>
                 <input
                   type="text"
+                  required
                   value={profile.fullName}
                   onChange={(e) => setProfile({ ...profile, fullName: e.target.value })}
                   className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3.5 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500/50"
@@ -131,6 +213,7 @@ export default function Settings() {
                 </label>
                 <input
                   type="email"
+                  required
                   value={profile.email}
                   onChange={(e) => setProfile({ ...profile, email: e.target.value })}
                   className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3.5 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500/50"
@@ -138,13 +221,91 @@ export default function Settings() {
               </div>
 
               <button
-                type="button"
-                onClick={handleSaveChanges}
-                className="px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition-colors mt-2"
+                type="submit"
+                disabled={isUpdatingProfile}
+                className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-semibold transition-colors cursor-pointer mt-1"
               >
-                Update Profile
+                {isUpdatingProfile ? 'Saving...' : 'Update Profile'}
               </button>
-            </div>
+            </form>
+          </SettingsSection>
+
+          {/* Account Security & Password Change */}
+          <SettingsSection
+            icon={Lock}
+            title="Account Security"
+            description="Update your password to keep your account secure."
+          >
+            {passwordMessage.text && (
+              <div
+                className={`p-3 rounded-lg text-xs font-medium flex items-center gap-2 ${
+                  passwordMessage.type === 'error'
+                    ? 'bg-rose-500/10 border border-rose-500/20 text-rose-400'
+                    : 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400'
+                }`}
+              >
+                {passwordMessage.type === 'error' ? (
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                ) : (
+                  <CheckCircle2 className="w-4 h-4 shrink-0" />
+                )}
+                <span>{passwordMessage.text}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleChangePassword} className="space-y-3">
+              <div>
+                <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider block mb-1.5">
+                  Current Password
+                </label>
+                <input
+                  type="password"
+                  required
+                  value={passwords.currentPassword}
+                  onChange={(e) => setPasswords({ ...passwords, currentPassword: e.target.value })}
+                  placeholder="••••••••"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3.5 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500/50"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider block mb-1.5">
+                  New Password (min. 6 characters)
+                </label>
+                <input
+                  type="password"
+                  required
+                  minLength={6}
+                  value={passwords.newPassword}
+                  onChange={(e) => setPasswords({ ...passwords, newPassword: e.target.value })}
+                  placeholder="••••••••"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3.5 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500/50"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider block mb-1.5">
+                  Confirm New Password
+                </label>
+                <input
+                  type="password"
+                  required
+                  minLength={6}
+                  value={passwords.confirmPassword}
+                  onChange={(e) => setPasswords({ ...passwords, confirmPassword: e.target.value })}
+                  placeholder="••••••••"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3.5 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500/50"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={isChangingPassword}
+                className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-slate-200 text-xs font-semibold transition-colors cursor-pointer mt-1"
+              >
+                {isChangingPassword ? 'Changing Password...' : 'Change Password'}
+              </button>
+            </form>
           </SettingsSection>
 
           {/* Productivity Preferences */}
@@ -257,7 +418,7 @@ export default function Settings() {
             <div className="flex items-start gap-2.5 p-3 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs leading-relaxed">
               <Info className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
               <span>
-                Note: These are frontend preference toggles. No external AI APIs (OpenAI/Gemini) are connected in this phase.
+                Note: Connected to live Google Gemini AI engine. All AI prompts are securely scoped to your workspace context.
               </span>
             </div>
           </SettingsSection>

@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Send, Sparkles, ListFilter, Target, TrendingUp, Lightbulb, MessageSquare } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { aiApi } from '../services/aiApi';
 import ChatMessage from '../components/ChatMessage';
 import AIQuickAction from '../components/AIQuickAction';
 import AITypingIndicator from '../components/AITypingIndicator';
@@ -51,18 +52,6 @@ export default function AIAssistant() {
       text: `Hi ${user?.name || 'there'}! I'm your FlowMind AI assistant. I can help you prioritize tasks, track progress, and improve your productivity. What would you like to work on today?`,
       timestamp: '10:00 AM',
     },
-    {
-      id: 2,
-      sender: 'user',
-      text: 'Help me prioritize my tasks for today.',
-      timestamp: '10:01 AM',
-    },
-    {
-      id: 3,
-      sender: 'ai',
-      text: "Based on your current tasks, I recommend starting with 'Finalize Q3 Product Roadmap' because it is high priority and due at 2:00 PM. Then focus on 'Prepare Sprint Demo Slides' and 'Review Frontend Component Architecture'.",
-      timestamp: '10:01 AM',
-    },
   ]);
 
   const [inputValue, setInputValue] = useState('');
@@ -90,29 +79,7 @@ export default function AIAssistant() {
     chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
 
-  const generateMockResponse = (userText) => {
-    const textLower = userText.toLowerCase();
-
-    if (textLower.includes('priority') || textLower.includes('prioritize') || textLower.includes('first')) {
-      return "Your top priority today should be 'Finalize Q3 Product Roadmap' (High Priority, due 2:00 PM). Follow up with 'Prepare Sprint Demo Slides' to keep your team aligned.";
-    }
-    if (textLower.includes('summarize') || textLower.includes('summary') || textLower.includes('progress')) {
-      return "Summary Overview: You have 8 total tasks (3 To Do, 3 In Progress, 2 Completed). Your overall goal completion rate is at 60%, with 1 goal ('Q3 User Acquisition Campaign') currently marked At Risk.";
-    }
-    if (textLower.includes('goal') || textLower.includes('risk')) {
-      return "Goal Status Alert: 'Q3 User Acquisition Campaign' is currently at 40% progress and marked 'At Risk' (Target: Sept 30). I recommend allocating 2 hours tomorrow for task execution.";
-    }
-    if (textLower.includes('productivity') || textLower.includes('analyze') || textLower.includes('insight')) {
-      return "Productivity Insight: You complete 35% more high-priority tasks during morning hours before 12:00 PM. Maintaining deep work blocks in the morning will maximize output.";
-    }
-    if (textLower.includes('help') || textLower.includes('suggest')) {
-      return "I can assist you with task breakdown, daily prioritization, sprint planning, and goal tracking. Try clicking any of the Quick Actions on the left!";
-    }
-
-    return "I've logged your request! Full AI model integration (OpenAI / Gemini API) will be connected in an upcoming phase. Currently running on local simulated responses.";
-  };
-
-  const handleSendMessage = (textToSend) => {
+  const handleSendMessage = async (textToSend) => {
     const cleanText = (textToSend || inputValue).trim();
     if (!cleanText || isTyping) return;
 
@@ -131,18 +98,28 @@ export default function AIAssistant() {
     if (!textToSend) setInputValue('');
     setIsTyping(true);
 
-    // 2. Simulate AI Processing Delay (800ms)
-    setTimeout(() => {
-      const aiResponseText = generateMockResponse(cleanText);
+    try {
+      // 2. Query AI API via Backend Context Engine
+      const aiData = await aiApi.chatWithAI(cleanText, messages);
       const aiMsg = {
         id: Date.now() + 1,
         sender: 'ai',
-        text: aiResponseText,
+        text: aiData.text,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
       setMessages((prev) => [...prev, aiMsg]);
+    } catch (err) {
+      console.error('[AIAssistant Error]:', err.message);
+      const errorMsg = {
+        id: Date.now() + 1,
+        sender: 'ai',
+        text: `Sorry, I encountered an issue: ${err.message}. Please try again!`,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      };
+      setMessages((prev) => [...prev, errorMsg]);
+    } finally {
       setIsTyping(false);
-    }, 800);
+    }
   };
 
   const handleKeyDown = (e) => {
@@ -166,7 +143,7 @@ export default function AIAssistant() {
         {/* AI Status Indicator */}
         <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold shrink-0">
           <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span>AI Assistant Ready</span>
+          <span>AI Assistant Active</span>
         </div>
       </div>
 
@@ -246,7 +223,7 @@ export default function AIAssistant() {
                 aria-label="Send message"
                 onClick={() => handleSendMessage()}
                 disabled={!inputValue.trim() || isTyping}
-                className="absolute right-2 p-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-800 text-white disabled:text-slate-600 transition-all shadow-sm"
+                className="absolute right-2 p-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-800 text-white disabled:text-slate-600 transition-all shadow-sm cursor-pointer"
               >
                 <Send className="w-4 h-4" />
               </button>
@@ -254,8 +231,8 @@ export default function AIAssistant() {
             <div className="flex items-center justify-between text-[11px] text-slate-500 mt-2 px-1">
               <span>Press <kbd className="font-mono bg-slate-800 px-1 rounded text-slate-400">Enter</kbd> to send</span>
               <span className="flex items-center gap-1">
-                <MessageSquare className="w-3 h-3 text-slate-600" />
-                Simulated AI Session
+                <MessageSquare className="w-3 h-3 text-indigo-400" />
+                Live Context AI Engine Active
               </span>
             </div>
           </div>
