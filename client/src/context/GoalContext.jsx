@@ -70,11 +70,19 @@ export function GoalProvider({ children }) {
     }
   };
 
-  const updateGoal = async (updatedGoal) => {
+  const updateGoal = async (goalIdOrGoal, goalData) => {
     try {
-      const goalId = updatedGoal.id || updatedGoal._id;
-      const updated = await goalApi.updateGoal(goalId, updatedGoal);
-      setGoals((prev) => prev.map((g) => ((g.id || g._id) === goalId ? updated : g)));
+      let id;
+      let payload;
+      if (typeof goalIdOrGoal === 'object' && goalIdOrGoal !== null) {
+        id = goalIdOrGoal.id || goalIdOrGoal._id;
+        payload = goalData || goalIdOrGoal;
+      } else {
+        id = goalIdOrGoal;
+        payload = goalData;
+      }
+      const updated = await goalApi.updateGoal(id, payload);
+      setGoals((prev) => prev.map((g) => ((g.id || g._id) === id ? updated : g)));
       return updated;
     } catch (err) {
       console.error('[GoalContext updateGoal Error]:', err.message);

@@ -11,6 +11,7 @@ export default function CreateTaskModal({ isOpen, onClose, onCreateTask }) {
   const [dueDate, setDueDate] = useState('');
   const [selectedGoal, setSelectedGoal] = useState('');
   const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Escape key handling
   useEffect(() => {
@@ -25,31 +26,38 @@ export default function CreateTaskModal({ isOpen, onClose, onCreateTask }) {
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!title.trim()) {
-      setError('Task title is required.');
+    if (!title.trim() || isSubmitting) {
+      if (!title.trim()) setError('Task title is required.');
       return;
     }
 
-    onCreateTask({
-      title: title.trim(),
-      description: description.trim(),
-      status,
-      priority,
-      dueDate: dueDate || 'Today',
-      goal: selectedGoal || null,
-    });
+    setIsSubmitting(true);
+    try {
+      await onCreateTask({
+        title: title.trim(),
+        description: description.trim(),
+        status,
+        priority,
+        dueDate: dueDate || 'Today',
+        goal: selectedGoal || null,
+      });
 
-    // Reset fields & close
-    setTitle('');
-    setDescription('');
-    setStatus('To Do');
-    setPriority('Medium');
-    setDueDate('');
-    setSelectedGoal('');
-    setError('');
-    onClose();
+      // Reset fields & close
+      setTitle('');
+      setDescription('');
+      setStatus('To Do');
+      setPriority('Medium');
+      setDueDate('');
+      setSelectedGoal('');
+      setError('');
+      onClose();
+    } catch (err) {
+      setError(err.message || 'Failed to create task');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -81,103 +89,107 @@ export default function CreateTaskModal({ isOpen, onClose, onCreateTask }) {
           </button>
         </div>
 
-        {/* Modal Form */}
+        {/* Modal Body / Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
+          {error && (
+            <div className="p-3 text-xs rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400">
+              {error}
+            </div>
+          )}
+
           {/* Title */}
           <div>
-            <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider block mb-1.5">
+            <label className="block text-xs font-medium text-slate-300 mb-1.5">
               Task Title <span className="text-rose-400">*</span>
             </label>
             <input
               type="text"
-              placeholder="e.g. Design User Authentication Flow"
               value={title}
-              onChange={(e) => {
-                setTitle(e.target.value);
-                if (error) setError('');
-              }}
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3.5 py-2.5 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500/50"
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="e.g., Implement authentication middleware"
+              className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
+              required
             />
-            {error && <span className="text-xs text-rose-400 mt-1 block">{error}</span>}
           </div>
 
-          {/* Optional Description Textarea */}
+          {/* Description */}
           <div>
-            <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider block mb-1.5">
-              Description <span className="text-slate-500 font-normal">(Optional)</span>
+            <label className="block text-xs font-medium text-slate-300 mb-1.5">
+              Description
             </label>
             <textarea
-              rows={2}
-              placeholder="Brief task description or notes..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3.5 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500/50"
+              placeholder="Add details, subtasks, or acceptance criteria..."
+              rows={3}
+              className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors resize-none"
             />
           </div>
 
-          {/* Status & Priority Row */}
+          {/* Status & Priority */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider block mb-1.5">
+              <label className="block text-xs font-medium text-slate-300 mb-1.5">
                 Status
               </label>
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3.5 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-indigo-500/50 cursor-pointer"
+                className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
               >
-                <option value="To Do" className="bg-slate-900">To Do</option>
-                <option value="In Progress" className="bg-slate-900">In Progress</option>
-                <option value="Completed" className="bg-slate-900">Completed</option>
+                <option value="To Do">To Do</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Completed">Completed</option>
               </select>
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider block mb-1.5">
+              <label className="block text-xs font-medium text-slate-300 mb-1.5">
                 Priority
               </label>
               <select
                 value={priority}
                 onChange={(e) => setPriority(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3.5 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-indigo-500/50 cursor-pointer"
+                className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
               >
-                <option value="High" className="bg-slate-900">High</option>
-                <option value="Medium" className="bg-slate-900">Medium</option>
-                <option value="Low" className="bg-slate-900">Low</option>
+                <option value="Low">Low</option>
+                <option value="Medium">Medium</option>
+                <option value="High">High</option>
               </select>
             </div>
           </div>
 
-          {/* Associated Goal & Due Date Row */}
+          {/* Due Date & Associated Goal */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider block mb-1.5">
-                Associated Goal <span className="text-slate-500 font-normal">(Optional)</span>
+              <label className="block text-xs font-medium text-slate-300 mb-1.5">
+                Due Date
+              </label>
+              <input
+                type="text"
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+                placeholder="Today, Tomorrow, YYYY-MM-DD"
+                className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-slate-300 mb-1.5">
+                Associate Goal
               </label>
               <select
                 value={selectedGoal}
                 onChange={(e) => setSelectedGoal(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3.5 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-indigo-500/50 cursor-pointer"
+                className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
               >
-                <option value="" className="bg-slate-900">-- None --</option>
+                <option value="">None (Independent Task)</option>
                 {goals.map((g) => (
-                  <option key={g.id || g._id} value={g.id || g._id} className="bg-slate-900">
+                  <option key={g.id || g._id} value={g.id || g._id}>
                     {g.title}
                   </option>
                 ))}
               </select>
-            </div>
-
-            <div>
-              <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider block mb-1.5">
-                Due Date
-              </label>
-              <input
-                type="date"
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3.5 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500/50 cursor-pointer"
-              />
             </div>
           </div>
 
@@ -186,15 +198,17 @@ export default function CreateTaskModal({ isOpen, onClose, onCreateTask }) {
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm font-medium transition-colors cursor-pointer"
+              disabled={isSubmitting}
+              className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm font-medium transition-colors cursor-pointer disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold shadow-md transition-colors cursor-pointer"
+              disabled={isSubmitting}
+              className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold shadow-md transition-colors cursor-pointer disabled:opacity-50 flex items-center gap-2"
             >
-              Create Task
+              {isSubmitting ? 'Creating...' : 'Create Task'}
             </button>
           </div>
         </form>

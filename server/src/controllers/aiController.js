@@ -116,7 +116,6 @@ export const sendConversationMessage = async (req, res, next) => {
     const { message } = req.body;
     const conversationId = req.params.id;
 
-    // 1. Verify conversation belongs to req.user.id
     const conversation = await conversationService.getConversationById(conversationId, req.user.id);
     if (!conversation) {
       return res.status(404).json({
@@ -125,13 +124,10 @@ export const sendConversationMessage = async (req, res, next) => {
       });
     }
 
-    // 2. Append User Message to conversation
     await conversationService.addMessage(conversationId, req.user.id, 'user', message);
 
-    // 3. Generate AI response using fresh task/goal context + conversation history
     const aiResult = await aiService.generateChatResponse(req.user.id, message, conversation.messages);
 
-    // 4. Append AI Assistant Message to conversation
     const updatedConversation = await conversationService.addMessage(
       conversationId,
       req.user.id,
@@ -143,6 +139,8 @@ export const sendConversationMessage = async (req, res, next) => {
       success: true,
       data: {
         text: aiResult.text,
+        action: aiResult.action || null,
+        intent: aiResult.intent || null,
         isFallback: aiResult.isFallback,
         provider: aiResult.provider,
         conversation: updatedConversation,

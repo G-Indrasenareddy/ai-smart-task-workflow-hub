@@ -70,11 +70,19 @@ export function TaskProvider({ children }) {
     }
   };
 
-  const updateTask = async (updatedTask) => {
+  const updateTask = async (taskIdOrTask, taskData) => {
     try {
-      const taskId = updatedTask.id || updatedTask._id;
-      const updated = await taskApi.updateTask(taskId, updatedTask);
-      setTasks((prev) => prev.map((t) => ((t.id || t._id) === taskId ? updated : t)));
+      let id;
+      let payload;
+      if (typeof taskIdOrTask === 'object' && taskIdOrTask !== null) {
+        id = taskIdOrTask.id || taskIdOrTask._id;
+        payload = taskData || taskIdOrTask;
+      } else {
+        id = taskIdOrTask;
+        payload = taskData;
+      }
+      const updated = await taskApi.updateTask(id, payload);
+      setTasks((prev) => prev.map((t) => ((t.id || t._id) === id ? updated : t)));
       return updated;
     } catch (err) {
       console.error('[TaskContext updateTask Error]:', err.message);

@@ -9,6 +9,7 @@ export default function EditGoalModal({ isOpen, onClose, onSaveGoal, goal }) {
   const [targetDate, setTargetDate] = useState('');
   const [tasksCount, setTasksCount] = useState(5);
   const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (goal) {
@@ -34,25 +35,32 @@ export default function EditGoalModal({ isOpen, onClose, onSaveGoal, goal }) {
 
   if (!isOpen || !goal) return null;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!title.trim()) {
-      setError('Goal title is required.');
+    if (!title.trim() || isSubmitting) {
+      if (!title.trim()) setError('Goal title is required.');
       return;
     }
 
-    onSaveGoal({
-      ...goal,
-      title: title.trim(),
-      description: description.trim(),
-      status,
-      progress: Number(progress),
-      targetDate: targetDate || goal.targetDate || 'September 30, 2026',
-      tasksCount: Number(tasksCount),
-    });
+    setIsSubmitting(true);
+    try {
+      await onSaveGoal({
+        ...goal,
+        title: title.trim(),
+        description: description.trim(),
+        status,
+        progress: Number(progress),
+        targetDate: targetDate || goal.targetDate || 'September 30, 2026',
+        tasksCount: Number(tasksCount),
+      });
 
-    setError('');
-    onClose();
+      setError('');
+      onClose();
+    } catch (err) {
+      setError(err.message || 'Failed to update goal');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -72,109 +80,114 @@ export default function EditGoalModal({ isOpen, onClose, onSaveGoal, goal }) {
             </div>
             <div>
               <h2 className="text-lg font-semibold text-slate-100">Edit Goal</h2>
-              <p className="text-xs text-slate-400">Update goal progress and objective details.</p>
+              <p className="text-xs text-slate-400">Update goal details, status, and milestone progress.</p>
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-lg transition-colors"
+            className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Modal Form */}
+        {/* Modal Body / Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
+          {error && (
+            <div className="p-3 text-xs rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400">
+              {error}
+            </div>
+          )}
+
           {/* Title */}
           <div>
-            <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider block mb-1.5">
+            <label className="block text-xs font-medium text-slate-300 mb-1.5">
               Goal Title <span className="text-rose-400">*</span>
             </label>
             <input
               type="text"
               value={title}
-              onChange={(e) => {
-                setTitle(e.target.value);
-                if (error) setError('');
-              }}
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3.5 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-indigo-500/50"
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="e.g., Q3 Backend Refactoring & Optimization"
+              className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
+              required
             />
-            {error && <span className="text-xs text-rose-400 mt-1 block">{error}</span>}
           </div>
 
           {/* Description */}
           <div>
-            <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider block mb-1.5">
+            <label className="block text-xs font-medium text-slate-300 mb-1.5">
               Description
             </label>
             <textarea
-              rows={2}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3.5 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500/50"
+              placeholder="Add key deliverables, team expectations, or objective metrics..."
+              rows={3}
+              className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors resize-none"
             />
           </div>
 
-          {/* Status & Progress Row */}
+          {/* Status & Progress Slider */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider block mb-1.5">
+              <label className="block text-xs font-medium text-slate-300 mb-1.5">
                 Status
               </label>
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3.5 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-indigo-500/50 cursor-pointer"
+                className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
               >
-                <option value="Active" className="bg-slate-900">Active</option>
-                <option value="Completed" className="bg-slate-900">Completed</option>
-                <option value="At Risk" className="bg-slate-900">At Risk</option>
+                <option value="Active">Active</option>
+                <option value="Completed">Completed</option>
+                <option value="At Risk">At Risk</option>
               </select>
             </div>
 
             <div>
-              <div className="flex justify-between items-center mb-1.5">
-                <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider">
-                  Progress
-                </label>
-                <span className="text-xs font-mono text-indigo-400 font-semibold">{progress}%</span>
-              </div>
+              <label className="block text-xs font-medium text-slate-300 mb-1.5">
+                Progress ({progress}%)
+              </label>
               <input
                 type="range"
                 min="0"
                 max="100"
+                step="5"
                 value={progress}
                 onChange={(e) => setProgress(e.target.value)}
-                className="w-full h-2 bg-slate-950 rounded-lg appearance-none cursor-pointer accent-indigo-500"
+                className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500 my-3"
               />
             </div>
           </div>
 
-          {/* Target Date & Related Tasks Row */}
+          {/* Target Date & Planned Tasks Count */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider block mb-1.5">
+              <label className="block text-xs font-medium text-slate-300 mb-1.5">
                 Target Date
               </label>
               <input
-                type="date"
-                value={targetDate.includes(',') ? '' : targetDate}
+                type="text"
+                value={targetDate}
                 onChange={(e) => setTargetDate(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3.5 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500/50 cursor-pointer"
+                placeholder="e.g., September 30, 2026"
+                className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
               />
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider block mb-1.5">
-                Related Tasks
+              <label className="block text-xs font-medium text-slate-300 mb-1.5">
+                Planned Tasks Count
               </label>
               <input
                 type="number"
-                min="0"
+                min="1"
+                max="100"
                 value={tasksCount}
                 onChange={(e) => setTasksCount(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3.5 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500/50"
+                className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
               />
             </div>
           </div>
@@ -184,15 +197,17 @@ export default function EditGoalModal({ isOpen, onClose, onSaveGoal, goal }) {
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm font-medium transition-colors"
+              disabled={isSubmitting}
+              className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm font-medium transition-colors cursor-pointer disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold shadow-md transition-colors"
+              disabled={isSubmitting}
+              className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold shadow-md transition-colors cursor-pointer disabled:opacity-50 flex items-center gap-2"
             >
-              Save Changes
+              {isSubmitting ? 'Saving...' : 'Save Changes'}
             </button>
           </div>
         </form>

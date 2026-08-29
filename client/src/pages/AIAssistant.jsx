@@ -19,7 +19,9 @@ import {
   Wrench,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useTasks } from '../context/TaskContext';
 import { aiApi } from '../services/aiApi';
+import { taskApi } from '../services/taskApi';
 import ChatMessage from '../components/ChatMessage';
 import AIQuickAction from '../components/AIQuickAction';
 import AITypingIndicator from '../components/AITypingIndicator';
@@ -125,6 +127,8 @@ export default function AIAssistant() {
             id: m._id || m.id || idx,
             sender: m.role === 'assistant' ? 'ai' : 'user',
             text: m.content,
+            action: m.action || null,
+            actionConfirmed: m.actionConfirmed || false,
             timestamp: m.createdAt
               ? new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
               : '',
@@ -135,7 +139,7 @@ export default function AIAssistant() {
               {
                 id: 'welcome',
                 sender: 'ai',
-                text: `Hi ${user?.name || 'there'}! 👋 I'm FlowMind AI. I can help you prioritize tasks, track goals, plan your schedule, or answer technical learning questions. What would you like to work on today?`,
+                text: `Hi ${user?.name || 'there'}! 👋 I'm FlowMind AI. How can I help you with tasks, goals, or technical learning today?`,
                 timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
               },
             ]);
@@ -211,6 +215,8 @@ export default function AIAssistant() {
         id: Date.now() + 1,
         sender: 'ai',
         text: res.text,
+        action: res.action || null,
+        actionConfirmed: false,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
 
@@ -230,6 +236,71 @@ export default function AIAssistant() {
     } finally {
       setIsTyping(false);
     }
+  };
+
+  const { createTask, updateTask, deleteTask, fetchTasks } = useTasks();
+  const [isActionPending, setIsActionPending] = useState(false);
+
+  const handleConfirmAction = async (msgId, action) => {
+    if (!action || !action.data || isActionPending) return;
+
+    setIsActionPending(true);
+    try {
+      if (action.type === 'CREATE_TASK') {
+        const created = await createTask(action.data);
+
+        setMessages((prev) =>
+          prev.map((m) => (m.id === msgId ? { ...m, actionConfirmed: true } : m))
+        );
+
+        const confirmMsg = {
+          id: Date.now(),
+          sender: 'ai',
+          text: `Task **"${created?.title || action.data.title}"** created successfully! I have updated your workspace context.`,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        };
+        setMessages((prev) => [...prev, confirmMsg]);
+      } else if (action.type === 'UPDATE_TASK') {
+        await updateTask(action.data.id, action.data.updates);
+
+        setMessages((prev) =>
+          prev.map((m) => (m.id === msgId ? { ...m, actionConfirmed: true } : m))
+        );
+
+        const confirmMsg = {
+          id: Date.now(),
+          sender: 'ai',
+          text: `Task **"${action.data.title}"** updated successfully! I have updated your workspace context.`,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        };
+        setMessages((prev) => [...prev, confirmMsg]);
+      } else if (action.type === 'DELETE_TASK') {
+        await deleteTask(action.data.id);
+
+        setMessages((prev) =>
+          prev.map((m) => (m.id === msgId ? { ...m, actionConfirmed: true } : m))
+        );
+
+        const confirmMsg = {
+          id: Date.now(),
+          sender: 'ai',
+          text: `Task **"${action.data.title}"** deleted successfully! I have updated your workspace context.`,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        };
+        setMessages((prev) => [...prev, confirmMsg]);
+      }
+    } catch (err) {
+      console.error('[AIAssistant] Action failed:', err.message);
+      alert(`Failed to perform action: ${err.message}`);
+    } finally {
+      setIsActionPending(false);
+    }
+  };
+
+  const handleCancelAction = (msgId) => {
+    setMessages((prev) =>
+      prev.map((m) => (m.id === msgId ? { ...m, action: null } : m))
+    );
   };
 
   const handleSubmitForm = (e) => {
@@ -292,7 +363,7 @@ export default function AIAssistant() {
         {
           id: 'welcome',
           sender: 'ai',
-          text: `Conversation cleared. What would you like to work on today?`,
+          text: `Conversation cleared. How can I help you today?`,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         },
       ]);
@@ -597,7 +668,13 @@ export default function AIAssistant() {
           {/* Primary Chat Messages Scroll Container */}
           <div className="flex-1 p-4 sm:p-6 overflow-y-auto space-y-4 min-h-0">
             {messages.map((msg) => (
-              <ChatMessage key={msg.id} message={msg} />
+              <ChatMessage
+                key={msg.id}
+                message={msg}
+                onConfirmAction={handleConfirmAction}
+                onCancelAction={handleCancelAction}
+                isActionPending={isActionPending}
+              />
             ))}
             {isTyping && <AITypingIndicator />}
             <div ref={chatBottomRef} />

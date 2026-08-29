@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import Task from '../models/Task.js';
 import User from '../models/User.js';
 import { notificationService } from '../services/notificationService.js';
@@ -47,6 +48,11 @@ function parseDueDate(dueDateStr) {
 
 export async function checkTaskReminders() {
   try {
+    // Only execute if Mongoose connection is connected (readyState === 1)
+    if (mongoose.connection.readyState !== 1) {
+      return;
+    }
+
     const todayStr = getLocalDateString(new Date());
 
     // Find non-completed tasks only
@@ -94,9 +100,9 @@ export async function checkTaskReminders() {
 
 export function startReminderScheduler() {
   console.log('[ReminderScheduler] Initialized interval scheduler (every 15 mins)');
-  // Execute initial scan immediately on server start
+  // Execute initial scan safely
   checkTaskReminders();
-  // Schedule subsequent scans every 15 minutes (15 * 60 * 1000)
+  // Schedule subsequent scans every 15 minutes
   intervalId = setInterval(checkTaskReminders, 15 * 60 * 1000);
 }
 
