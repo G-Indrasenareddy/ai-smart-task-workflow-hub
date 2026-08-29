@@ -56,6 +56,10 @@ export const aiApi = {
     return res.data;
   },
 
+  async sendMessage(id, message) {
+    return this.sendConversationMessage(id, message);
+  },
+
   async renameConversation(id, title) {
     const res = await apiClient(`/ai/conversations/${id}`, {
       method: 'PUT',

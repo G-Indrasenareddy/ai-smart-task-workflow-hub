@@ -1,4 +1,58 @@
+import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
+import { Copy, Check, Code } from 'lucide-react';
+
+function CodeBlock({ className, children }) {
+  const [copied, setCopied] = useState(false);
+  const match = /language-(\w+)/.exec(className || '');
+  const language = match ? match[1].toUpperCase() : 'CODE';
+  const codeString = String(children).replace(/\n$/, '');
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(codeString);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy code:', err);
+    }
+  };
+
+  return (
+    <div className="relative group my-3.5 rounded-xl border border-slate-800 bg-slate-950 shadow-md overflow-hidden text-left">
+      {/* Header with Language badge & Copy button */}
+      <div className="flex items-center justify-between px-4 py-2 bg-slate-900/90 border-b border-slate-800/80 text-[11px] font-mono text-slate-400">
+        <div className="flex items-center gap-1.5 font-semibold tracking-wider text-slate-300">
+          <Code className="w-3.5 h-3.5 text-indigo-400" />
+          <span>{language}</span>
+        </div>
+        <button
+          type="button"
+          onClick={handleCopy}
+          aria-label="Copy code"
+          className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-all text-xs font-sans cursor-pointer"
+        >
+          {copied ? (
+            <>
+              <Check className="w-3.5 h-3.5 text-emerald-400" />
+              <span className="text-emerald-400 font-semibold">Copied ✓</span>
+            </>
+          ) : (
+            <>
+              <Copy className="w-3.5 h-3.5" />
+              <span>Copy</span>
+            </>
+          )}
+        </button>
+      </div>
+
+      {/* Code Text Content */}
+      <div className="p-4 font-mono text-xs text-emerald-400 overflow-x-auto leading-relaxed">
+        <pre className="whitespace-pre">{codeString}</pre>
+      </div>
+    </div>
+  );
+}
 
 export default function MarkdownRenderer({ content }) {
   if (!content) return null;
@@ -58,13 +112,7 @@ export default function MarkdownRenderer({ content }) {
               </code>
             );
           }
-          return (
-            <div className="relative group my-3">
-              <div className="bg-slate-950 border border-slate-800 rounded-xl p-3.5 font-mono text-xs text-emerald-400 overflow-x-auto shadow-inner leading-relaxed">
-                <pre className="whitespace-pre">{children}</pre>
-              </div>
-            </div>
-          );
+          return <CodeBlock className={className}>{children}</CodeBlock>;
         },
         table: ({ children }) => (
           <div className="overflow-x-auto my-3 border border-slate-800 rounded-xl bg-slate-950/60 shadow-sm">
