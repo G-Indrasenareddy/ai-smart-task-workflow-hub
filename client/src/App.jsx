@@ -6,6 +6,7 @@ import Goals from './pages/Goals';
 import Tasks from './pages/Tasks';
 import AIAssistant from './pages/AIAssistant';
 import Settings from './pages/Settings';
+import Profile from './pages/Profile';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -35,6 +36,7 @@ export default function App() {
                     <Route path="tasks" element={<Tasks />} />
                     <Route path="ai-assistant" element={<AIAssistant />} />
                     <Route path="settings" element={<Settings />} />
+                    <Route path="profile" element={<Profile />} />
                   </Route>
                 </Route>
               </Routes>

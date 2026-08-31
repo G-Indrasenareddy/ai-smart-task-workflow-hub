@@ -1,4 +1,4 @@
-import { useLocation } from 'react-router-dom';
+import { useLocation, Link } from 'react-router-dom';
 import { User, LogOut } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import NotificationDropdown from './NotificationDropdown';
@@ -9,6 +9,7 @@ const routeTitles = {
   '/tasks': 'Tasks',
   '/ai-assistant': 'AI Assistant',
   '/settings': 'Settings',
+  '/profile': 'Profile',
 };
 
 export default function Header() {
@@ -28,15 +29,19 @@ export default function Header() {
 
         <div className="h-5 w-px bg-slate-800" />
 
-        {/* User Profile */}
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 font-semibold text-xs">
+        {/* User Profile Navigation */}
+        <Link
+          to="/profile"
+          className="flex items-center gap-3 hover:opacity-80 transition-opacity cursor-pointer group"
+          title="View Profile"
+        >
+          <div className="w-8 h-8 rounded-full bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 font-semibold text-xs group-hover:border-indigo-400 transition-colors">
             {user?.name ? user.name.charAt(0).toUpperCase() : <User className="w-4 h-4" />}
           </div>
-          <span className="text-sm font-medium text-slate-200 hidden sm:inline-block">
+          <span className="text-sm font-medium text-slate-200 hidden sm:inline-block group-hover:text-white transition-colors">
             {user?.name || 'User Profile'}
           </span>
-        </div>
+        </Link>
 
         {/* Logout Button */}
         <button

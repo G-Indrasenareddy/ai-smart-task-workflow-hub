@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { LogIn, Lock, Mail, BrainCircuit } from 'lucide-react';
+import { LogIn, Lock, Mail } from 'lucide-react';
+import flowmindLogo from '../assets/flowmind-full-logo.png';
 
 export default function Login() {
   const { login } = useAuth();
@@ -31,10 +32,9 @@ export default function Login() {
       <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-xl space-y-6">
         {/* Brand Header */}
         <div className="text-center space-y-2">
-          <div className="inline-flex items-center justify-center p-3 bg-indigo-600/10 text-indigo-400 rounded-xl mb-2">
-            <BrainCircuit className="w-8 h-8" />
+          <div className="flex justify-center mb-2">
+            <img src={flowmindLogo} alt="FlowMind AI" className="h-16 w-auto max-w-[280px] object-contain drop-shadow" />
           </div>
-          <h1 className="text-2xl font-bold text-slate-100 tracking-tight">Sign In to FlowMind AI</h1>
           <p className="text-sm text-slate-400">Manage your tasks and goals with AI assistance</p>
         </div>
 

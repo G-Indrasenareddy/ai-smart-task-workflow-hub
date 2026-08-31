@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { UserPlus, Lock, Mail, User, BrainCircuit } from 'lucide-react';
+import { UserPlus, Lock, Mail, User } from 'lucide-react';
+import flowmindLogo from '../assets/flowmind-full-logo.png';
 
 export default function Register() {
   const { register } = useAuth();
@@ -9,19 +10,26 @@ export default function Register() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMessage('');
+
+    if (password !== confirmPassword) {
+      setErrorMessage('Passwords do not match.');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
       await register(name, email, password);
       navigate('/');
     } catch (err) {
-      setErrorMessage(err.message || 'Registration failed. Please check your details.');
+      setErrorMessage(err.message || 'Failed to create account. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -32,11 +40,10 @@ export default function Register() {
       <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-xl space-y-6">
         {/* Brand Header */}
         <div className="text-center space-y-2">
-          <div className="inline-flex items-center justify-center p-3 bg-indigo-600/10 text-indigo-400 rounded-xl mb-2">
-            <BrainCircuit className="w-8 h-8" />
+          <div className="flex justify-center mb-2">
+            <img src={flowmindLogo} alt="FlowMind AI" className="h-16 w-auto max-w-[280px] object-contain drop-shadow" />
           </div>
-          <h1 className="text-2xl font-bold text-slate-100 tracking-tight">Create an Account</h1>
-          <p className="text-sm text-slate-400">Join FlowMind AI and organize your workspace</p>
+          <p className="text-sm text-slate-400">Create an Account and organize your workspace</p>
         </div>
 
         {/* Error Alert */}
