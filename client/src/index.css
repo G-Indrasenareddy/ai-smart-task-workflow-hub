@@ -6,6 +6,13 @@ body,
   min-height: 100vh;
   background-color: #020617;
   color: #f8fafc;
+  overflow-x: hidden;
+  max-width: 100vw;
+  width: 100%;
+}
+
+*, ::before, ::after {
+  box-sizing: border-box;
 }
 
 /* Native date picker for dark theme */

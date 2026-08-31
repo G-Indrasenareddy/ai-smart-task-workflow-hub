@@ -143,7 +143,7 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-6">
+    <div className="space-y-4 sm:space-y-6 max-w-7xl mx-auto pb-6 w-full max-w-full overflow-x-hidden">
       {/* Toast Notification */}
       <SuccessToast message={toastMessage} onClose={() => setToastMessage('')} />
 
@@ -155,12 +155,12 @@ export default function Dashboard() {
       />
 
       {/* 1. Welcome Section */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900/60 border border-slate-800 p-6 rounded-xl">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-100 tracking-tight">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900/60 border border-slate-800 p-4 sm:p-6 rounded-xl w-full max-w-full overflow-hidden">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-100 tracking-tight truncate">
             Welcome back, {user?.name || 'User'} 👋
           </h1>
-          <p className="text-sm text-slate-400 mt-1">
+          <p className="text-xs sm:text-sm text-slate-400 mt-1">
             Here is your productivity overview and task status for today.
           </p>
         </div>
@@ -168,7 +168,7 @@ export default function Dashboard() {
         <button
           type="button"
           onClick={() => setIsModalOpen(true)}
-          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold rounded-lg shadow-md hover:shadow-indigo-600/20 transition-all shrink-0 cursor-pointer"
+          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold rounded-lg shadow-md hover:shadow-indigo-600/20 transition-all shrink-0 cursor-pointer w-full sm:w-auto"
         >
           <Plus className="w-4 h-4" />
           <span>Create Task</span>
@@ -176,24 +176,24 @@ export default function Dashboard() {
       </div>
 
       {/* 2. Statistics Section */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 w-full max-w-full">
         {statsData.map((stat) => (
           <StatCard key={stat.id} {...stat} />
         ))}
       </div>
 
       {/* 3. Main Content Grid (Two Column) */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 w-full max-w-full">
         {/* Left Column: Today's Tasks (2 spans on lg) */}
-        <div className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-            <div className="flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-indigo-400" />
-              <h2 className="text-base font-semibold text-slate-100">
+        <div className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-xl p-4 sm:p-5 shadow-sm space-y-4 w-full max-w-full overflow-hidden">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-800 gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <Calendar className="w-4 h-4 text-indigo-400 shrink-0" />
+              <h2 className="text-sm sm:text-base font-semibold text-slate-100 truncate">
                 Today's Tasks
               </h2>
             </div>
-            <span className="text-xs text-slate-400 font-medium bg-slate-800 px-2.5 py-1 rounded-full">
+            <span className="text-[11px] sm:text-xs text-slate-400 font-medium bg-slate-800 px-2.5 py-1 rounded-full shrink-0">
               {todaysTasks.length} Due Today
             </span>
           </div>
@@ -218,12 +218,12 @@ export default function Dashboard() {
         </div>
 
         {/* Right Column: Goal Progress (1 span on lg) */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-            <h2 className="text-base font-semibold text-slate-100">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 sm:p-5 shadow-sm space-y-4 w-full max-w-full overflow-hidden">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-800 gap-2">
+            <h2 className="text-sm sm:text-base font-semibold text-slate-100 truncate">
               Goal Progress
             </h2>
-            <span className="text-xs text-slate-400 font-medium bg-slate-800 px-2.5 py-1 rounded-full">
+            <span className="text-[11px] sm:text-xs text-slate-400 font-medium bg-slate-800 px-2.5 py-1 rounded-full shrink-0">
               {goals.length} Active
             </span>
           </div>
